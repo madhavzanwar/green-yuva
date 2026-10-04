@@ -6,7 +6,6 @@ import '../models/user.dart';
 import '../models/verification_request.dart';
 import '../services/activity_service.dart';
 import '../services/verification_service.dart';
-import '../utils/transitions.dart';
 import 'verification_request_screen.dart';
 
 class ActivityDetailScreen extends StatefulWidget {

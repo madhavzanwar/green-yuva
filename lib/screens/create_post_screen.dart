@@ -4,7 +4,6 @@ import '../models/post.dart';
 import '../models/user.dart';
 import '../services/post_service.dart';
 import '../services/image_upload_service.dart';
-import '../constants.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:typed_data';
 
@@ -33,6 +32,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _pickImageFromGallery() async {
     try {
       final imageBytes = await ImageUploadService.pickImageFromGallery();
+      if (!mounted) return;
       if (imageBytes != null) {
         setState(() {
           _selectedImageBytes = imageBytes;
@@ -40,6 +40,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       _showErrorSnackBar('Failed to pick image: $e');
     }
   }
@@ -47,6 +48,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _takePhotoWithCamera() async {
     try {
       final imageBytes = await ImageUploadService.takePhotoWithCamera();
+      if (!mounted) return;
       if (imageBytes != null) {
         setState(() {
           _selectedImageBytes = imageBytes;
@@ -54,6 +56,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       _showErrorSnackBar('Failed to take photo: $e');
     }
   }
