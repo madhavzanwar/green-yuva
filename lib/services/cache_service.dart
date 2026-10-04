@@ -28,8 +28,8 @@ class CacheService {
       if (cachedString == null) return null;
 
       final cacheData = jsonDecode(cachedString) as Map<String, dynamic>;
-      final timestamp = cacheData['timestamp'] as int;
-      final expiry = cacheData['expiry'] as int;
+      final timestamp = (cacheData['timestamp'] as num?)?.toInt() ?? 0;
+      final expiry = (cacheData['expiry'] as num?)?.toInt() ?? _defaultExpiry.inMilliseconds;
 
       final now = DateTime.now().millisecondsSinceEpoch;
       final age = now - timestamp;
@@ -88,7 +88,8 @@ class CacheService {
       if (cachedString == null) return null;
 
       final cacheData = jsonDecode(cachedString) as Map<String, dynamic>;
-      final timestamp = cacheData['timestamp'] as int;
+      final timestamp = (cacheData['timestamp'] as num?)?.toInt();
+      if (timestamp == null) return null;
 
       return DateTime.fromMillisecondsSinceEpoch(timestamp);
     } catch (e) {
