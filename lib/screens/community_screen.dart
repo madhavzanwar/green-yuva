@@ -275,6 +275,7 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
     if (confirmed == true) {
       try {
         await _userService.joinSchool(widget.user.id, '');
+        if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -286,6 +287,7 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
         widget.onSchoolLeft?.call();
 
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to leave school: $e'),

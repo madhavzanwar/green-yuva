@@ -151,7 +151,7 @@ class AqiService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_cityPrefKey, cityName);
     } catch (e) {
-      print('⚠️ Error saving selected city: ');
+      print('⚠️ Error saving selected city: $e');
     }
   }
 

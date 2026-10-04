@@ -1,14 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:math';
 import '../models/ecore.dart';
 import '../services/user_service.dart';
-import '../services/school_service.dart';
 import '../utils/ecore_setup.dart';
 
 class ClimaGameService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final UserService _userService = UserService();
-  static final SchoolService _schoolService = SchoolService();
 
   static List<Ecore> _cachedDefaultEcores = [];
 
@@ -192,7 +189,7 @@ class ClimaGameService {
             'conqueredEcores': data['conqueredCount'] ?? (10 - rankings.length),
           });
         }
-        rankings.sort((a, b) => (b['conqueredEcores'] as int).compareTo(a['conqueredEcores'] as int));
+        rankings.sort((a, b) => ((b['conqueredEcores'] as num?)?.toInt() ?? 0).compareTo((a['conqueredEcores'] as num?)?.toInt() ?? 0));
         return rankings;
       }
     } catch (_) {}
