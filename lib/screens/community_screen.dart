@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/post.dart';
-import '../models/activity.dart';
 import '../models/user.dart';
 import '../services/post_service.dart';
 import '../services/activity_service.dart';
 import '../services/user_service.dart';
 import '../services/school_service.dart';
 import '../widgets/post_card.dart';
-import '../widgets/activity_card.dart';
 import 'create_post_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'comments_screen.dart';
-import 'activity_detail_screen.dart';
 import 'activities_screen.dart';
 import '../utils/transitions.dart';
 import '../utils/performance_optimizer.dart';
@@ -41,14 +38,12 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
   final SchoolService _schoolService = SchoolService();
 
   List<PostWithUser> _posts = [];
-  List<Activity> _activities = [];
   bool _isLoading = true;
   bool _hasError = false;
   String? _schoolName;
   String? _schoolImageUrl;
 
   final ScrollController _scrollController = ScrollController();
-  double _scrollOffset = 0.0;
   static const double _expandedHeight = 180.0;
   static const double _collapsedHeight = kToolbarHeight;
 

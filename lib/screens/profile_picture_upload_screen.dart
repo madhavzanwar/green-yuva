@@ -28,7 +28,6 @@ class _ProfilePictureUploadScreenState extends State<ProfilePictureUploadScreen>
   late Animation<Offset> _slideAnimation;
   late Animation<double> _scaleAnimation;
 
-  final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _isImageValid = false;
   Uint8List? _selectedImageBytes;
@@ -103,6 +102,7 @@ class _ProfilePictureUploadScreenState extends State<ProfilePictureUploadScreen>
       });
 
       final imageBytes = await ImageUploadService.pickImageFromGallery();
+      if (!mounted) return;
       if (imageBytes != null) {
         setState(() {
           _selectedImageBytes = imageBytes;
@@ -116,6 +116,7 @@ class _ProfilePictureUploadScreenState extends State<ProfilePictureUploadScreen>
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -130,6 +131,7 @@ class _ProfilePictureUploadScreenState extends State<ProfilePictureUploadScreen>
       });
 
       final imageBytes = await ImageUploadService.takePhotoWithCamera();
+      if (!mounted) return;
       if (imageBytes != null) {
         setState(() {
           _selectedImageBytes = imageBytes;
@@ -143,6 +145,7 @@ class _ProfilePictureUploadScreenState extends State<ProfilePictureUploadScreen>
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });

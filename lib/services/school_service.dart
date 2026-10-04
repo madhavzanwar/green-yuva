@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/school.dart';
-import '../utils/performance_monitor.dart';
 
 class SchoolService {
   final CollectionReference schoolsCollection = FirebaseFirestore.instance.collection('schools');

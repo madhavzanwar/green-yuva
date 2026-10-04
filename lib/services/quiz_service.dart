@@ -483,13 +483,9 @@ class QuizService {
           pointsToAward = (quiz.points * 0.3).round();
         }
 
-        final user = await _userService.getUserById(progress.userId);
-        if (user != null) {
-          final newPoints = user.points + pointsToAward;
-          await _userService.updateUserPoints(progress.userId, newPoints);
-
-          print('Awarded $pointsToAward points to user ${progress.userId} for completing quiz ${progress.quizId}');
-        }
+        await _userService.addUserPoints(progress.userId, pointsToAward);
+        await _userService.addUserAction(progress.userId);
+        print('Awarded $pointsToAward points to user ${progress.userId} for completing quiz ${progress.quizId}');
       }
     } catch (e) {
       print('Error awarding quiz points: $e');
@@ -1171,41 +1167,6 @@ class QuizService {
     }
   }
 
-  static List<QuizQuestion> _getClimateChangeBasicQuestions() {
-    return [
-      QuizQuestion(
-        id: 'ccb_1',
-        question: 'What is the greenhouse effect?',
-        answers: [
-          QuizAnswer(id: 'ccb_1_a', text: 'A natural process that warms the Earth', isCorrect: true),
-          QuizAnswer(id: 'ccb_1_b', text: 'A man-made process', isCorrect: false),
-          QuizAnswer(id: 'ccb_1_c', text: 'A cooling effect', isCorrect: false),
-          QuizAnswer(id: 'ccb_1_d', text: 'A type of pollution', isCorrect: false),
-        ],
-        correctAnswerId: 'ccb_1_a',
-        explanation: 'The greenhouse effect is a natural process that warms the Earth\'s surface.',
-        points: 10,
-      ),
-    ];
-  }
-
-  static List<QuizQuestion> _getSDGClimateActionQuestions() {
-    return [
-      QuizQuestion(
-        id: 'sdg_1',
-        question: 'What is SDG 13?',
-        answers: [
-          QuizAnswer(id: 'sdg_1_a', text: 'Climate Action', isCorrect: true),
-          QuizAnswer(id: 'sdg_1_b', text: 'Clean Water', isCorrect: false),
-          QuizAnswer(id: 'sdg_1_c', text: 'Quality Education', isCorrect: false),
-          QuizAnswer(id: 'sdg_1_d', text: 'No Poverty', isCorrect: false),
-        ],
-        correctAnswerId: 'sdg_1_a',
-        explanation: 'SDG 13 is Climate Action, which aims to take urgent action to combat climate change.',
-        points: 10,
-      ),
-    ];
-  }
 
   static List<QuizQuestion> _getSampleQuestions() {
     return [

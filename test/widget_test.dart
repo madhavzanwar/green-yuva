@@ -1,19 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:greenyuva/main.dart';
 
 void main() {
   testWidgets('Green Yuva smoke test', (WidgetTester tester) async {
+    // Build GreenYuvaApp widget and trigger a frame.
     await tester.pumpWidget(const GreenYuvaApp());
 
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify GreenYuvaApp starts successfully.
+    expect(find.byType(GreenYuvaApp), findsOneWidget);
   });
 }

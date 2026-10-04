@@ -33,25 +33,31 @@ class Quiz {
     this.isActive = true,
   });
 
+  static DateTime _parseDate(dynamic dateVal) {
+    if (dateVal is Timestamp) return dateVal.toDate();
+    if (dateVal is DateTime) return dateVal;
+    if (dateVal is String) return DateTime.tryParse(dateVal) ?? DateTime.now();
+    if (dateVal is num) return DateTime.fromMillisecondsSinceEpoch(dateVal.toInt());
+    return DateTime.now();
+  }
+
   factory Quiz.fromJson(Map<String, dynamic> json) {
     return Quiz(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      author: json['author'] ?? '',
-      category: json['category'] ?? '',
-      questionCount: json['questionCount'] ?? 0,
-      timeLimit: json['timeLimit'] ?? 0,
-      points: json['points'] ?? 0,
-      rating: (json['rating'] ?? 0.0).toDouble(),
-      imageUrl: json['imageUrl'] ?? '',
-      videoUrl: json['videoUrl'] ?? '',
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      author: json['author']?.toString() ?? '',
+      category: json['category']?.toString() ?? '',
+      questionCount: (json['questionCount'] as num?)?.toInt() ?? 0,
+      timeLimit: (json['timeLimit'] as num?)?.toInt() ?? 0,
+      points: (json['points'] as num?)?.toInt() ?? 0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      imageUrl: json['imageUrl']?.toString() ?? '',
+      videoUrl: json['videoUrl']?.toString() ?? '',
       questions: (json['questions'] as List<dynamic>?)
-          ?.map((q) => QuizQuestion.fromJson(q))
+          ?.map((q) => QuizQuestion.fromJson(Map<String, dynamic>.from(q as Map)))
           .toList() ?? [],
-      createdAt: json['createdAt'] is Timestamp
-          ? (json['createdAt'] as Timestamp).toDate()
-          : DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: _parseDate(json['createdAt']),
       isActive: json['isActive'] ?? true,
     );
   }
@@ -181,23 +187,19 @@ class QuizAttempt {
 
   factory QuizAttempt.fromJson(Map<String, dynamic> json) {
     return QuizAttempt(
-      id: json['id'] ?? '',
-      quizId: json['quizId'] ?? '',
-      userId: json['userId'] ?? '',
-      attemptNumber: json['attemptNumber'] ?? 1,
-      startedAt: json['startedAt'] is Timestamp
-          ? (json['startedAt'] as Timestamp).toDate()
-          : DateTime.parse(json['startedAt'] ?? DateTime.now().toIso8601String()),
-      completedAt: json['completedAt'] is Timestamp
-          ? (json['completedAt'] as Timestamp).toDate()
-          : null,
-      finalScore: json['finalScore'] ?? 0,
-      timeSpent: json['timeSpent'] ?? 0,
-      isCompleted: json['isCompleted'] ?? false,
-      totalQuestions: json['totalQuestions'] ?? 0,
-      correctAnswers: json['correctAnswers'] ?? 0,
+      id: json['id']?.toString() ?? '',
+      quizId: json['quizId']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      attemptNumber: (json['attemptNumber'] as num?)?.toInt() ?? 1,
+      startedAt: Quiz._parseDate(json['startedAt']),
+      completedAt: json['completedAt'] != null ? Quiz._parseDate(json['completedAt']) : null,
+      finalScore: (json['finalScore'] as num?)?.toInt() ?? 0,
+      timeSpent: (json['timeSpent'] as num?)?.toInt() ?? 0,
+      isCompleted: json['isCompleted'] == true,
+      totalQuestions: (json['totalQuestions'] as num?)?.toInt() ?? 0,
+      correctAnswers: (json['correctAnswers'] as num?)?.toInt() ?? 0,
       questionResults: (json['questionResults'] as List<dynamic>?)
-          ?.map((result) => QuestionResult.fromJson(result))
+          ?.map((result) => QuestionResult.fromJson(Map<String, dynamic>.from(result as Map)))
           .toList() ?? [],
     );
   }
@@ -241,13 +243,11 @@ class QuestionResult {
 
   factory QuestionResult.fromJson(Map<String, dynamic> json) {
     return QuestionResult(
-      questionId: json['questionId'] ?? '',
-      selectedAnswerId: json['selectedAnswerId'] ?? '',
-      isCorrect: json['isCorrect'] ?? false,
-      timeSpent: json['timeSpent'] ?? 0,
-      answeredAt: json['answeredAt'] is Timestamp
-          ? (json['answeredAt'] as Timestamp).toDate()
-          : DateTime.parse(json['answeredAt'] ?? DateTime.now().toIso8601String()),
+      questionId: json['questionId']?.toString() ?? '',
+      selectedAnswerId: json['selectedAnswerId']?.toString() ?? '',
+      isCorrect: json['isCorrect'] == true,
+      timeSpent: (json['timeSpent'] as num?)?.toInt() ?? 0,
+      answeredAt: Quiz._parseDate(json['answeredAt']),
     );
   }
 
@@ -293,21 +293,17 @@ class QuizProgress {
 
   factory QuizProgress.fromJson(Map<String, dynamic> json) {
     return QuizProgress(
-      id: json['id'] ?? '',
-      quizId: json['quizId'] ?? '',
-      userId: json['userId'] ?? '',
-      currentQuestion: json['currentQuestion'] ?? 0,
-      correctAnswers: json['correctAnswers'] ?? 0,
-      totalQuestions: json['totalQuestions'] ?? 0,
-      timeSpent: json['timeSpent'] ?? 0,
-      isCompleted: json['isCompleted'] ?? false,
-      startedAt: json['startedAt'] is Timestamp
-          ? (json['startedAt'] as Timestamp).toDate()
-          : DateTime.parse(json['startedAt'] ?? DateTime.now().toIso8601String()),
-      completedAt: json['completedAt'] is Timestamp
-          ? (json['completedAt'] as Timestamp).toDate()
-          : null,
-      score: json['score'] ?? 0,
+      id: json['id']?.toString() ?? '',
+      quizId: json['quizId']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      currentQuestion: (json['currentQuestion'] as num?)?.toInt() ?? 0,
+      correctAnswers: (json['correctAnswers'] as num?)?.toInt() ?? 0,
+      totalQuestions: (json['totalQuestions'] as num?)?.toInt() ?? 0,
+      timeSpent: (json['timeSpent'] as num?)?.toInt() ?? 0,
+      isCompleted: json['isCompleted'] == true,
+      startedAt: Quiz._parseDate(json['startedAt']),
+      completedAt: json['completedAt'] != null ? Quiz._parseDate(json['completedAt']) : null,
+      score: (json['score'] as num?)?.toInt() ?? 0,
       userAnswers: Map<String, String>.from(json['userAnswers'] ?? {}),
     );
   }

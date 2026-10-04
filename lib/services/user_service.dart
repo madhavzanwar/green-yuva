@@ -188,7 +188,7 @@ class UserService {
       for (int i = 0; i < 7; i++) {
         final date = referenceDate.subtract(Duration(days: i));
         final dayKey = 'points_${date.year}_${date.month.toString().padLeft(2, '0')}_${date.day.toString().padLeft(2, '0')}';
-        weeklyTotal += (userData[dayKey] ?? 0) as int;
+        weeklyTotal += ((userData[dayKey] as num?)?.toInt() ?? 0);
       }
 
       return weeklyTotal;
@@ -212,7 +212,7 @@ class UserService {
       for (int day = 1; day <= lastDayOfMonth.day; day++) {
         final date = DateTime(referenceDate.year, referenceDate.month, day);
         final dayKey = 'points_${date.year}_${date.month.toString().padLeft(2, '0')}_${date.day.toString().padLeft(2, '0')}';
-        monthlyTotal += (userData[dayKey] ?? 0) as int;
+        monthlyTotal += ((userData[dayKey] as num?)?.toInt() ?? 0);
       }
 
       return monthlyTotal;
@@ -230,7 +230,7 @@ class UserService {
       final userData = doc.data() as Map<String, dynamic>;
       final dayKey = 'points_${date.year}_${date.month.toString().padLeft(2, '0')}_${date.day.toString().padLeft(2, '0')}';
 
-      return userData[dayKey] ?? 0;
+      return (userData[dayKey] as num?)?.toInt() ?? 0;
     } catch (e) {
       print('❌ Error getting daily points: $e');
       return 0;
@@ -345,33 +345,28 @@ class UserService {
 
       final userData = doc.data() as Map<String, dynamic>;
       final now = DateTime.now();
-      int currentStreak = userData['streak'] ?? 0;
+      int currentStreak = (userData['streak'] as num?)?.toInt() ?? 0;
 
       final today = DateTime(now.year, now.month, now.day);
       final dayKey = 'points_${now.year}_${now.month.toString().padLeft(2, '0')}_${now.day.toString().padLeft(2, '0')}';
-      final todayPoints = userData[dayKey] ?? 0;
+      final todayPoints = (userData[dayKey] as num?)?.toInt() ?? 0;
 
       if (todayPoints > 0) {
-
-        final yesterday = today.subtract(Duration(days: 1));
+        final yesterday = today.subtract(const Duration(days: 1));
         final yesterdayKey = 'points_${yesterday.year}_${yesterday.month.toString().padLeft(2, '0')}_${yesterday.day.toString().padLeft(2, '0')}';
-        final yesterdayPoints = userData[yesterdayKey] ?? 0;
+        final yesterdayPoints = (userData[yesterdayKey] as num?)?.toInt() ?? 0;
 
         if (yesterdayPoints > 0) {
-
           currentStreak++;
         } else {
-
           currentStreak = 1;
         }
       } else {
-
-        final yesterday = today.subtract(Duration(days: 1));
+        final yesterday = today.subtract(const Duration(days: 1));
         final yesterdayKey = 'points_${yesterday.year}_${yesterday.month.toString().padLeft(2, '0')}_${yesterday.day.toString().padLeft(2, '0')}';
-        final yesterdayPoints = userData[yesterdayKey] ?? 0;
+        final yesterdayPoints = (userData[yesterdayKey] as num?)?.toInt() ?? 0;
 
         if (yesterdayPoints == 0) {
-
           currentStreak = 0;
         }
       }

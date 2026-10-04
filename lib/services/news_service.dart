@@ -12,26 +12,6 @@ class NewsService {
   static const String _newsApiBaseUrl = 'https://newsapi.org/v2';
   static const String _gNewsBaseUrl = 'https://gnews.io/api/v4';
 
-  static const List<String> _climateKeywords = [
-    'climate change',
-    'global warming',
-    'natural disaster',
-    'hurricane',
-    'typhoon',
-    'earthquake',
-    'flood',
-    'wildfire',
-    'drought',
-    'landslide',
-    'tsunami',
-    'volcanic eruption',
-    'extreme weather',
-    'environmental disaster',
-    'carbon emissions',
-    'renewable energy',
-    'sustainability',
-  ];
-
   static const Map<String, String> _disasterTypeMapping = {
     'hurricane': 'HURRICANE',
     'typhoon': 'TYPHOON',
@@ -175,7 +155,6 @@ class NewsService {
       final url = article['url'] ?? '';
       final imageUrl = article['urlToImage'] ?? '';
       final publishedAt = article['publishedAt'] ?? '';
-      final source = article['source']?['name'] ?? '';
 
       final disasterType = _extractDisasterType('$title $description $content');
       final location = _extractLocation('$title $description $content');
@@ -188,7 +167,7 @@ class NewsService {
         description: description.isNotEmpty ? description : content.substring(0, content.length > 200 ? 200 : content.length),
         location: location,
         type: disasterType,
-        date: DateTime.parse(publishedAt),
+        date: DateTime.tryParse(publishedAt) ?? DateTime.now(),
         casualties: casualties,
         damage: damage,
         imageUrl: imageUrl,
@@ -208,7 +187,6 @@ class NewsService {
       final url = article['url'] ?? '';
       final imageUrl = article['image'] ?? '';
       final publishedAt = article['publishedAt'] ?? '';
-      final source = article['source']?['name'] ?? '';
 
       final disasterType = _extractDisasterType('$title $description $content');
       final location = _extractLocation('$title $description $content');
@@ -221,7 +199,7 @@ class NewsService {
         description: description.isNotEmpty ? description : content.substring(0, content.length > 200 ? 200 : content.length),
         location: location,
         type: disasterType,
-        date: DateTime.parse(publishedAt),
+        date: DateTime.tryParse(publishedAt) ?? DateTime.now(),
         casualties: casualties,
         damage: damage,
         imageUrl: imageUrl,

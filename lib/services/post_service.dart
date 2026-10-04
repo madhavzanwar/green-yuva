@@ -164,6 +164,11 @@ class PostService {
   Future<void> addComment(String schoolId, String postId, Comment comment) async {
     try {
       await getPostsCollection(schoolId).doc(postId).collection('comments').doc(comment.id).set(comment.toMap());
+      try {
+        await getPostsCollection(schoolId).doc(postId).update({
+          'commentCount': FieldValue.increment(1),
+        });
+      } catch (_) {}
     } catch (e) {
       print('Error adding comment: $e');
       rethrow;

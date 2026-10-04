@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
 import '../models/verification_request.dart';
 import '../models/activity.dart';
 import '../models/ecore.dart';
 import '../models/user.dart';
 import '../services/verification_service.dart';
 import '../services/image_upload_service.dart';
-import '../utils/transitions.dart';
 
 class VerificationRequestScreen extends StatefulWidget {
   final VerificationType type;
@@ -39,7 +37,6 @@ class VerificationRequestScreen extends StatefulWidget {
 
 class _VerificationRequestScreenState extends State<VerificationRequestScreen> {
   final VerificationService _verificationService = VerificationService();
-  final ImageUploadService _imageUploadService = ImageUploadService();
   final TextEditingController _descriptionController = TextEditingController();
 
   String? _proofImageUrl;
@@ -59,12 +56,14 @@ class _VerificationRequestScreenState extends State<VerificationRequestScreen> {
       });
 
       final imageBytes = await ImageUploadService.pickImageFromGallery();
+      if (!mounted) return;
       if (imageBytes != null) {
         final imageUrl = await ImageUploadService.uploadMissionProofImage(
           missionId: widget.itemId,
           userId: widget.user.id,
           imageBytes: imageBytes,
         );
+        if (!mounted) return;
 
         setState(() {
           _proofImageUrl = imageUrl;
@@ -76,18 +75,17 @@ class _VerificationRequestScreenState extends State<VerificationRequestScreen> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isUploadingImage = false;
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to upload image: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to upload image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

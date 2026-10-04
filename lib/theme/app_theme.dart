@@ -375,39 +375,42 @@ class _NeoButtonState extends State<NeoButton> {
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
       onTap: widget.onPressed,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 80),
-        height: widget.height,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: widget.color,
-          borderRadius: BorderRadius.circular(widget.radius),
-          border: Border.all(color: AppColors.solidBlack, width: 2.0),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.solidBlack,
-              offset: shadowOffset,
-              blurRadius: 0,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.leading != null) ...[
-              widget.leading!,
-              const SizedBox(width: 8),
-            ],
-            Text(
-              widget.text,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: widget.fontSize,
-                fontWeight: FontWeight.bold,
-                color: widget.textColor,
+      child: Transform.translate(
+        offset: _isPressed ? const Offset(1.5, 1.5) : Offset.zero,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 60),
+          height: widget.height,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: widget.color,
+            borderRadius: BorderRadius.circular(widget.radius),
+            border: Border.all(color: AppColors.solidBlack, width: 2.0),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.solidBlack,
+                offset: shadowOffset,
+                blurRadius: 0,
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.leading != null) ...[
+                widget.leading!,
+                const SizedBox(width: 8),
+              ],
+              Text(
+                widget.text,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: widget.fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: widget.textColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -652,5 +655,281 @@ class NeoBackButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Pulsating Live Indicator Badge for AQI, sensor streams, and verified MRV tags
+class NeoPulseBadge extends StatelessWidget {
+  final String label;
+  final Color badgeColor;
+  final Color dotColor;
+  final Color textColor;
+  final IconData? icon;
+
+  const NeoPulseBadge({
+    super.key,
+    required this.label,
+    this.badgeColor = AppColors.butterYellow,
+    this.dotColor = const Color(0xFF2E7D32),
+    this.textColor = AppColors.solidBlack,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.solidBlack, width: 2.0),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.solidBlack,
+            offset: Offset(2.0, 2.0),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          PulseWidget(
+            minScale: 0.8,
+            maxScale: 1.25,
+            duration: const Duration(milliseconds: 1000),
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.solidBlack, width: 1.2),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: textColor),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact Neo-Brutalist Metric Card (used for MRV calculations, waste diverted, CO2 avoided)
+class NeoMetricCard extends StatelessWidget {
+  final String value;
+  final String label;
+  final String? subtext;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const NeoMetricCard({
+    super.key,
+    required this.value,
+    required this.label,
+    this.subtext,
+    required this.icon,
+    this.color = AppColors.cardWhite,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return NeoCard(
+      color: color,
+      radius: 18,
+      borderWidth: 2.0,
+      shadowOffset: const Offset(3.0, 3.5),
+      padding: const EdgeInsets.all(14),
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.butterYellow,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.solidBlack, width: 1.6),
+                ),
+                child: Icon(icon, size: 18, color: AppColors.solidBlack),
+              ),
+              const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.mutedText),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: AppColors.solidBlack,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.solidBlack,
+            ),
+          ),
+          if (subtext != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              subtext!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                color: AppColors.mutedText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Celebratory Sticker Modal Dialog with Neo-Brutalist tactile styling
+Future<T?> showNeoStickerModal<T>({
+  required BuildContext context,
+  required String stickerEmoji,
+  required String title,
+  required String description,
+  String? badgeLabel,
+  Widget? customContent,
+  String actionText = 'Understood!',
+  VoidCallback? onAction,
+}) {
+  return showDialog<T>(
+    context: context,
+    barrierDismissible: true,
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          NeoCard(
+            color: AppColors.cardWhite,
+            radius: 26,
+            borderWidth: 2.5,
+            shadowOffset: const Offset(4.0, 5.0),
+            padding: const EdgeInsets.fromLTRB(20, 36, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (badgeLabel != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.butterYellow,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.solidBlack, width: 1.8),
+                    ),
+                    child: Text(
+                      badgeLabel.toUpperCase(),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.6,
+                        color: AppColors.solidBlack,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.solidBlack,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: AppColors.solidBlack.withValues(alpha: 0.8),
+                    height: 1.45,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (customContent != null) ...[
+                  const SizedBox(height: 14),
+                  customContent,
+                ],
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: NeoButton(
+                    text: actionText,
+                    color: AppColors.butterYellow,
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      onAction?.call();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: -26,
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.dustyCoral,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.solidBlack, width: 2.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppColors.solidBlack,
+                    offset: Offset(2.5, 3.0),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                stickerEmoji,
+                style: const TextStyle(fontSize: 26),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 

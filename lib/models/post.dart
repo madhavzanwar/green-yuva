@@ -21,16 +21,24 @@ class Post {
     required this.commentCount,
   });
 
+  static DateTime _parseDate(dynamic dateVal) {
+    if (dateVal is Timestamp) return dateVal.toDate();
+    if (dateVal is DateTime) return dateVal;
+    if (dateVal is String) return DateTime.tryParse(dateVal) ?? DateTime.now();
+    if (dateVal is num) return DateTime.fromMillisecondsSinceEpoch(dateVal.toInt());
+    return DateTime.now();
+  }
+
   factory Post.fromMap(String id, Map<String, dynamic> data) {
     return Post(
       id: id,
-      userId: data['userId'] ?? '',
-      content: data['content'] ?? '',
-      imageUrl: data['imageUrl'],
-      timestamp: (data['timestamp'] as Timestamp).toDate(),
+      userId: data['userId']?.toString() ?? '',
+      content: data['content']?.toString() ?? '',
+      imageUrl: data['imageUrl']?.toString(),
+      timestamp: _parseDate(data['timestamp']),
       likes: List<String>.from(data['likes'] ?? []),
       saves: List<String>.from(data['saves'] ?? []),
-      commentCount: data['commentCount'] ?? 0,
+      commentCount: (data['commentCount'] as num?)?.toInt() ?? 0,
     );
   }
 

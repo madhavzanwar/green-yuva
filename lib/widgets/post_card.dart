@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/post.dart';
 import '../models/user.dart';
 import '../services/post_service.dart';
-import '../constants.dart';
 import '../theme/app_theme.dart';
 
 class PostCard extends StatelessWidget {

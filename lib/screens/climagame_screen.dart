@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart';
 
 import '../models/ecore.dart';
 import '../models/user.dart';
@@ -11,7 +10,6 @@ import '../services/location_service.dart';
 import '../widgets/ecore_mission_modal.dart';
 import '../theme/app_theme.dart';
 import 'main_screen.dart';
-import 'climaconnect_screen.dart';
 import '../widgets/green_rush_radar_map.dart';
 
 class ClimaGameScreen extends StatefulWidget {
@@ -28,11 +26,8 @@ class _ClimaGameScreenState extends State<ClimaGameScreen> with SingleTickerProv
   GoogleMapController? _mapController;
 
   LatLng _initialPosition = const LatLng(18.5204, 73.8567); // Pune center
-  bool _mapInitialized = true;
-  bool _isLoading = false;
   int _userDailyMissionCount = 1;
 
-  Set<Marker> _ecoreMarkers = {};
   List<Ecore> _visibleEcores = [];
   List<Map<String, dynamic>> _schoolRankings = [];
   Ecore? _selectedEcore;
@@ -45,7 +40,6 @@ class _ClimaGameScreenState extends State<ClimaGameScreen> with SingleTickerProv
     if (_visibleEcores.isNotEmpty) {
       _selectedEcore = _visibleEcores.first;
     }
-    _buildMarkers(_visibleEcores);
     _loadData();
     _tryGetRealLocation();
   }
@@ -64,7 +58,6 @@ class _ClimaGameScreenState extends State<ClimaGameScreen> with SingleTickerProv
         setState(() {
           _initialPosition = LatLng(pos.latitude, pos.longitude);
         });
-        _buildMarkers(_visibleEcores);
         _mapController?.animateCamera(
           CameraUpdate.newLatLngZoom(_initialPosition, 14.0),
         );
@@ -86,59 +79,10 @@ class _ClimaGameScreenState extends State<ClimaGameScreen> with SingleTickerProv
           if (_selectedEcore == null && ecores.isNotEmpty) {
             _selectedEcore = ecores.first;
           }
-          _buildMarkers(ecores);
         });
       }
     } catch (e) {
       print('Error loading GreenRush data: $e');
-    }
-  }
-
-  void _buildMarkers(List<Ecore> ecores) {
-    final markers = <Marker>{};
-
-    // User location marker
-    markers.add(
-      Marker(
-        markerId: const MarkerId('user_location'),
-        position: _initialPosition,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        infoWindow: const InfoWindow(title: 'Your Location', snippet: 'Green Yuva Active'),
-      ),
-    );
-
-    // Ecore markers
-    for (final ecore in ecores) {
-      markers.add(
-        Marker(
-          markerId: MarkerId('ecore_${ecore.id}'),
-          position: LatLng(ecore.latitude, ecore.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            ecore.isConquered ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueOrange,
-          ),
-          infoWindow: InfoWindow(
-            title: ecore.name,
-            snippet: '${ecore.missions.length} Missions • ${ecore.totalPoints} Karma Coins',
-            onTap: () => _openMissionModal(ecore),
-          ),
-          onTap: () {
-            setState(() {
-              _selectedEcore = ecore;
-            });
-            _mapController?.animateCamera(
-              CameraUpdate.newLatLngZoom(LatLng(ecore.latitude, ecore.longitude), 14.5),
-            );
-          },
-        ),
-      );
-    }
-
-    if (mounted) {
-      setState(() {
-        _ecoreMarkers = markers;
-      });
-    } else {
-      _ecoreMarkers = markers;
     }
   }
 

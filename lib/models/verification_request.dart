@@ -51,34 +51,47 @@ class VerificationRequest {
 
   String get missionTitle => itemTitle;
 
+  static DateTime _parseDate(dynamic dateVal) {
+    if (dateVal is Timestamp) return dateVal.toDate();
+    if (dateVal is DateTime) return dateVal;
+    if (dateVal is String) return DateTime.tryParse(dateVal) ?? DateTime.now();
+    if (dateVal is num) return DateTime.fromMillisecondsSinceEpoch(dateVal.toInt());
+    return DateTime.now();
+  }
+
+  static DateTime? _parseNullableDate(dynamic dateVal) {
+    if (dateVal == null) return null;
+    if (dateVal is Timestamp) return dateVal.toDate();
+    if (dateVal is DateTime) return dateVal;
+    if (dateVal is String) return DateTime.tryParse(dateVal);
+    if (dateVal is num) return DateTime.fromMillisecondsSinceEpoch(dateVal.toInt());
+    return null;
+  }
+
   factory VerificationRequest.fromMap(String id, Map<String, dynamic> data) {
     return VerificationRequest(
       id: id,
-      userId: data['userId'] ?? '',
-      userName: data['userName'] ?? '',
-      schoolId: data['schoolId'] ?? '',
-      schoolName: data['schoolName'] ?? '',
+      userId: data['userId']?.toString() ?? '',
+      userName: data['userName']?.toString() ?? '',
+      schoolId: data['schoolId']?.toString() ?? '',
+      schoolName: data['schoolName']?.toString() ?? '',
       type: VerificationType.values.firstWhere(
         (e) => e.toString() == 'VerificationType.${data['type']}',
         orElse: () => VerificationType.activity,
       ),
-      itemId: data['itemId'] ?? '',
-      itemTitle: data['itemTitle'] ?? '',
-      points: data['points'] ?? 0,
-      proofImageUrl: data['proofImageUrl'],
-      description: data['description'],
+      itemId: data['itemId']?.toString() ?? '',
+      itemTitle: data['itemTitle']?.toString() ?? '',
+      points: (data['points'] as num?)?.toInt() ?? 0,
+      proofImageUrl: data['proofImageUrl']?.toString(),
+      description: data['description']?.toString(),
       status: VerificationStatus.values.firstWhere(
         (e) => e.toString() == 'VerificationStatus.${data['status']}',
         orElse: () => VerificationStatus.pending,
       ),
-      createdAt: data['createdAt'] is Timestamp
-          ? (data['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
-      reviewedAt: data['reviewedAt'] is Timestamp
-          ? (data['reviewedAt'] as Timestamp).toDate()
-          : null,
-      reviewedBy: data['reviewedBy'],
-      reviewNotes: data['reviewNotes'],
+      createdAt: _parseDate(data['createdAt']),
+      reviewedAt: _parseNullableDate(data['reviewedAt']),
+      reviewedBy: data['reviewedBy']?.toString(),
+      reviewNotes: data['reviewNotes']?.toString(),
     );
   }
 

@@ -37,10 +37,18 @@ class Activity {
     this.schoolId,
   });
 
+  static DateTime _parseDate(dynamic dateVal) {
+    if (dateVal is Timestamp) return dateVal.toDate();
+    if (dateVal is DateTime) return dateVal;
+    if (dateVal is String) return DateTime.tryParse(dateVal) ?? DateTime.now();
+    if (dateVal is num) return DateTime.fromMillisecondsSinceEpoch(dateVal.toInt());
+    return DateTime.now();
+  }
+
   factory Activity.fromMap(String id, Map<String, dynamic> data) {
     final now = DateTime.now();
-    final activityDate = (data['date'] as Timestamp).toDate();
-    final isUpcoming = activityDate.isAfter(now);
+    final activityDate = _parseDate(data['date']);
+    final isUpcoming = data['isUpcoming'] ?? activityDate.isAfter(now);
     final isCompleted = data['isCompleted'] ?? false;
 
     final participants = List<String>.from(data['participants'] ?? []);
@@ -51,8 +59,8 @@ class Activity {
       description: data['description'] ?? '',
       imageUrl: data['imageUrl'],
       date: activityDate,
-      endDate: data['endDate'] != null ? (data['endDate'] as Timestamp).toDate() : null,
-      points: data['points'] ?? 0,
+      endDate: data['endDate'] != null ? _parseDate(data['endDate']) : null,
+      points: (data['points'] as num?)?.toInt() ?? 0,
       participantCount: participants.length,
       participants: participants,
       type: data['type'] ?? '',

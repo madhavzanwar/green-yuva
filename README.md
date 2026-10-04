@@ -100,6 +100,11 @@ While youth desire to participate in ecological stewardship, traditional climate
 * **Tangible Utility for Climate Action**: Students redeem earned Karma Points for campus canteen meals, eco-store merchandise, cafeteria beverages, and university sustainability perks.
 * **Daily Streak Multipliers**: Promotes sustained habit formation with milestone badges and university leaderboard rankings.
 
+### 6. 🪪 Yuva GreenPassport™ — Verifiable MRV & NAAC 7.1 Transcript (Hero Feature)
+* **Verifiable Digital MRV Credential**: Cryptographically signed student climate action transcript proving avoided $\text{CO}_2\text{e}$, landfill methane ($\text{CH}_4$) diverted, sapling survival stewardship, and low-exposure transit.
+* **Instant Dynamic QR Verification**: Publicly auditable proof for corporate recruiters, LinkedIn credentials, and ESG placements.
+* **Institutional NAAC Criterion 7.1 Engine**: 1-click audit dashboard calculating university compliance metrics for NAAC peer-review and NIRF institutional ratings.
+
 ---
 
 ## 🏛️ System Architecture

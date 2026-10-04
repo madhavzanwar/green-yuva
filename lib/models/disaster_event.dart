@@ -27,16 +27,22 @@ class DisasterEvent {
     this.isActive = true,
   });
 
+  static DateTime _parseDate(dynamic dateVal) {
+    if (dateVal is Timestamp) return dateVal.toDate();
+    if (dateVal is DateTime) return dateVal;
+    if (dateVal is String) return DateTime.tryParse(dateVal) ?? DateTime.now();
+    if (dateVal is num) return DateTime.fromMillisecondsSinceEpoch(dateVal.toInt());
+    return DateTime.now();
+  }
+
   factory DisasterEvent.fromJson(Map<String, dynamic> json) {
     return DisasterEvent(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       location: json['location'] ?? '',
       type: json['type'] ?? '',
-      date: json['date'] is Timestamp
-          ? (json['date'] as Timestamp).toDate()
-          : DateTime.parse(json['date'] ?? DateTime.now().toIso8601String()),
+      date: _parseDate(json['date']),
       casualties: json['casualties'] ?? '',
       damage: json['damage'] ?? '',
       imageUrl: json['imageUrl'] ?? '',

@@ -11,6 +11,7 @@ import '../utils/transitions.dart';
 import '../theme/app_theme.dart';
 import 'main_screen.dart';
 import 'karma_canteen_screen.dart';
+import 'green_passport_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final AppUser user;
@@ -534,6 +535,92 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           const SizedBox(height: 2),
                           Text(
                             'Claim canteen drinks, cycle passes & sapling plaques',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.solidBlack.withValues(alpha: 0.75),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.solidBlack, size: 14),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Dedicated Yuva GreenPassport Hero Banner
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => GreenPassportScreen(user: user)),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.butterYellow,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.solidBlack, width: 2.0),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.solidBlack,
+                      offset: Offset(2, 2.5),
+                      blurRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardWhite,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.solidBlack, width: 1.5),
+                      ),
+                      child: const Icon(Icons.badge_rounded, color: AppColors.solidBlack, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Yuva GreenPassport™',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.solidBlack,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.sageGreen,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: AppColors.solidBlack, width: 1),
+                                ),
+                                child: Text(
+                                  'MRV LEDGER',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.solidBlack,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Verifiable Digital Transcript & NAAC Criterion 7.1 Score',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,

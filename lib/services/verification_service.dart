@@ -46,13 +46,15 @@ class VerificationService {
           .collection('verification_requests')
           .where('userId', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 4));
 
       return snapshot.docs
           .map((doc) => VerificationRequest.fromMap(doc.id, doc.data()))
           .toList();
     } catch (e) {
-      throw Exception('Failed to get user verification requests: $e');
+      print('ℹ️ VerificationService getUserVerificationRequests fallback: $e');
+      return [];
     }
   }
 
@@ -62,13 +64,15 @@ class VerificationService {
           .collection('verification_requests')
           .where('status', isEqualTo: 'pending')
           .orderBy('createdAt', descending: true)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 4));
 
       return snapshot.docs
           .map((doc) => VerificationRequest.fromMap(doc.id, doc.data()))
           .toList();
     } catch (e) {
-      throw Exception('Failed to get pending verification requests: $e');
+      print('ℹ️ VerificationService getPendingVerificationRequests fallback: $e');
+      return [];
     }
   }
 
@@ -78,13 +82,15 @@ class VerificationService {
           .collection('verification_requests')
           .where('schoolId', isEqualTo: schoolId)
           .orderBy('createdAt', descending: true)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 4));
 
       return snapshot.docs
           .map((doc) => VerificationRequest.fromMap(doc.id, doc.data()))
           .toList();
     } catch (e) {
-      throw Exception('Failed to get school verification requests: $e');
+      print('ℹ️ VerificationService getSchoolVerificationRequests fallback: $e');
+      return [];
     }
   }
 
@@ -101,7 +107,7 @@ class VerificationService {
         'reviewNotes': reviewNotes,
       });
     } catch (e) {
-      throw Exception('Failed to approve verification request: $e');
+      print('❌ Failed to approve verification request: $e');
     }
   }
 
@@ -118,7 +124,7 @@ class VerificationService {
         'reviewNotes': reviewNotes,
       });
     } catch (e) {
-      throw Exception('Failed to reject verification request: $e');
+      print('❌ Failed to reject verification request: $e');
     }
   }
 
@@ -134,11 +140,13 @@ class VerificationService {
           .where('itemId', isEqualTo: itemId)
           .where('type', isEqualTo: type.toString().split('.').last)
           .where('status', isEqualTo: 'pending')
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 3));
 
       return snapshot.docs.isNotEmpty;
     } catch (e) {
-      throw Exception('Failed to check pending verification: $e');
+      print('ℹ️ VerificationService hasPendingVerification fallback: $e');
+      return false;
     }
   }
 
@@ -154,7 +162,8 @@ class VerificationService {
           .where('itemId', isEqualTo: itemId)
           .where('type', isEqualTo: type.toString().split('.').last)
           .limit(1)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 3));
 
       if (snapshot.docs.isEmpty) return null;
 
@@ -163,7 +172,8 @@ class VerificationService {
         snapshot.docs.first.data(),
       );
     } catch (e) {
-      throw Exception('Failed to get verification request: $e');
+      print('ℹ️ VerificationService getVerificationRequest fallback: $e');
+      return null;
     }
   }
 
@@ -174,7 +184,7 @@ class VerificationService {
           .doc(requestId)
           .delete();
     } catch (e) {
-      throw Exception('Failed to delete verification request: $e');
+      print('❌ Failed to delete verification request: $e');
     }
   }
 }

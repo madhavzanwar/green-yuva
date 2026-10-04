@@ -52,14 +52,14 @@ class AppUser {
       firstName: firstName,
       lastName: lastName,
       joinedSchoolId: data['joinedSchoolId'],
-      points: data['points'] ?? 0,
+      points: (data['points'] as num?)?.toInt() ?? 0,
       savedPosts: List<String>.from(data['savedPosts'] ?? []),
       likedPosts: List<String>.from(data['likedPosts'] ?? []),
       profilePic: data['profilePic'],
-      actions: data['actions'] ?? 0,
-      streak: data['streak'] ?? 0,
-      weekPoints: data['weekPoints'] ?? 0,
-      weekGoal: data['weekGoal'] ?? 800,
+      actions: (data['actions'] as num?)?.toInt() ?? 0,
+      streak: (data['streak'] as num?)?.toInt() ?? 0,
+      weekPoints: (data['weekPoints'] as num?)?.toInt() ?? 0,
+      weekGoal: (data['weekGoal'] as num?)?.toInt() ?? 800,
     );
   }
 

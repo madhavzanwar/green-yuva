@@ -60,33 +60,34 @@ class Ecore {
     };
   }
 
+  static DateTime? _parseNullableDate(dynamic dateVal) {
+    if (dateVal == null) return null;
+    if (dateVal is Timestamp) return dateVal.toDate();
+    if (dateVal is DateTime) return dateVal;
+    if (dateVal is String) return DateTime.tryParse(dateVal);
+    if (dateVal is num) return DateTime.fromMillisecondsSinceEpoch(dateVal.toInt());
+    return null;
+  }
+
   factory Ecore.fromMap(String id, Map<String, dynamic> data) {
     return Ecore(
       id: id,
       name: data['name'] ?? '',
-      latitude: (data['latitude'] ?? 0.0).toDouble(),
-      longitude: (data['longitude'] ?? 0.0).toDouble(),
+      latitude: (data['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (data['longitude'] as num?)?.toDouble() ?? 0.0,
       conqueredBySchoolId: data['conqueredBySchoolId'],
       conqueredBySchoolName: data['conqueredBySchoolName'],
-      conqueredAt: data['conqueredAt'] is Timestamp
-          ? (data['conqueredAt'] as Timestamp).toDate()
-          : null,
-      coolingTimeEnd: data['coolingTimeEnd'] is Timestamp
-          ? (data['coolingTimeEnd'] as Timestamp).toDate()
-          : null,
+      conqueredAt: _parseNullableDate(data['conqueredAt']),
+      coolingTimeEnd: _parseNullableDate(data['coolingTimeEnd']),
       missions: (data['missions'] as List<dynamic>? ?? [])
-          .map((m) => EcoreMission.fromMap(m as Map<String, dynamic>))
+          .map((m) => EcoreMission.fromMap(Map<String, dynamic>.from(m as Map)))
           .toList(),
-      totalPoints: data['totalPoints'] ?? 0,
+      totalPoints: (data['totalPoints'] as num?)?.toInt() ?? 0,
       isActive: data['isActive'] ?? true,
       isDiscovered: data['isDiscovered'] ?? false,
-      discoveredAt: data['discoveredAt'] is Timestamp
-          ? (data['discoveredAt'] as Timestamp).toDate()
-          : null,
+      discoveredAt: _parseNullableDate(data['discoveredAt']),
       discoveredBySchoolId: data['discoveredBySchoolId'],
-      createdAt: data['createdAt'] is Timestamp
-          ? (data['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
+      createdAt: _parseNullableDate(data['createdAt']) ?? DateTime.now(),
     );
   }
 
@@ -178,21 +179,19 @@ class EcoreMission {
 
   factory EcoreMission.fromMap(Map<String, dynamic> data) {
     return EcoreMission(
-      id: data['id'] ?? '',
-      title: data['title'] ?? '',
-      description: data['description'] ?? '',
-      summary: data['summary'] ?? '',
+      id: data['id']?.toString() ?? '',
+      title: data['title']?.toString() ?? '',
+      description: data['description']?.toString() ?? '',
+      summary: data['summary']?.toString() ?? '',
       tips: List<String>.from(data['tips'] ?? []),
       categories: List<String>.from(data['categories'] ?? []),
-      points: data['points'] ?? 0,
-      imageUrl: data['imageUrl'] ?? '',
-      isCompleted: data['isCompleted'] ?? false,
-      completedByUserId: data['completedByUserId'],
-      completedByUserName: data['completedByUserName'],
-      completedAt: data['completedAt'] is Timestamp
-          ? (data['completedAt'] as Timestamp).toDate()
-          : null,
-      proofImageUrl: data['proofImageUrl'],
+      points: (data['points'] as num?)?.toInt() ?? 0,
+      imageUrl: data['imageUrl']?.toString() ?? '',
+      isCompleted: data['isCompleted'] == true,
+      completedByUserId: data['completedByUserId']?.toString(),
+      completedByUserName: data['completedByUserName']?.toString(),
+      completedAt: Ecore._parseNullableDate(data['completedAt']),
+      proofImageUrl: data['proofImageUrl']?.toString(),
     );
   }
 

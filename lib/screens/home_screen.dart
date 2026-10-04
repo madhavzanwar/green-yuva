@@ -26,6 +26,7 @@ import 'yuvaswap_screen.dart';
 import '../widgets/green_rush_radar_map.dart';
 import '../services/language_service.dart';
 import 'karma_canteen_screen.dart';
+import 'green_passport_screen.dart';
 import '../services/aqi_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -401,6 +402,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     _buildStatCardsRow(),
                     const SizedBox(height: 16),
                     _buildWeeklyProgressCard(),
+                    const SizedBox(height: 16),
+                    _buildGreenPassportBanner(),
                     const SizedBox(height: 16),
                     _buildKarmaCanteenBanner(),
                     const SizedBox(height: 22),
@@ -940,6 +943,82 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
+  /// Hero GreenPassport Verifiable Digital MRV & NAAC Audit Banner
+  Widget _buildGreenPassportBanner() {
+    return NeoCard(
+      color: AppColors.butterYellow,
+      radius: 20,
+      borderWidth: 2.2,
+      shadowOffset: const Offset(3.5, 4.0),
+      padding: const EdgeInsets.all(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => GreenPassportScreen(user: widget.user)),
+        );
+      },
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.cardWhite,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.solidBlack, width: 2.0),
+            ),
+            child: const Icon(Icons.badge_rounded, color: AppColors.solidBlack, size: 28),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Yuva GreenPassport™',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.solidBlack,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const NeoPulseBadge(
+                      label: 'MRV',
+                      badgeColor: AppColors.sageGreen,
+                      dotColor: Color(0xFF1B5E20),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Verifiable Student Climate Transcript, Dynamic QR & NAAC 7.1 Score',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.solidBlack.withValues(alpha: 0.8),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.cardWhite,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.solidBlack, width: 1.8),
+            ),
+            child: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppColors.solidBlack),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Dedicated Karma Canteen & Rewards Store Promo Banner
   Widget _buildKarmaCanteenBanner() {
     return NeoCard(
@@ -1378,87 +1457,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ],
               ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRadarVisualFallback() {
-    return Container(
-      color: const Color(0xFFE8F1EC),
-      child: Stack(
-        children: [
-          Center(
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.sageGreen, width: 2),
-              ),
-            ),
-          ),
-          Center(
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.solidBlack, width: 1.5),
-              ),
-            ),
-          ),
-          Center(
-            child: Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.dustyCoral,
-                border: Border.all(color: AppColors.solidBlack, width: 2),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 45,
-            right: 60,
-            child: _buildPinDot('Solar Hub', AppColors.butterYellow),
-          ),
-          Positioned(
-            bottom: 40,
-            left: 70,
-            child: _buildPinDot('Eco Core', AppColors.sageGreen),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPinDot(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.solidBlack, width: 1.5),
-          ),
-        ),
-        const SizedBox(width: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: AppColors.solidBlack, width: 1.0),
-          ),
-          child: Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(fontSize: 9, fontWeight: FontWeight.bold),
           ),
         ),
       ],

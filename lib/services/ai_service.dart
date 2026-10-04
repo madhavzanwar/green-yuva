@@ -6,7 +6,6 @@ import '../utils/env_config.dart';
 
 class AIService {
   static final Map<String, List<Map<String, dynamic>>> _conversationContexts = {};
-  static final Map<String, int> _responsePatterns = {};
 
   static Future<AIResponse> sendMessage(String message, {String? conversationId}) async {
     try {
@@ -235,9 +234,9 @@ Please provide a direct, helpful, and factually rich response. Explain key point
       createdAt: DateTime.now(),
       messages: messages.map((msg) => AIMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        content: msg['content'],
+        content: msg['content']?.toString() ?? '',
         type: msg['role'] == 'user' ? MessageType.user : MessageType.ai,
-        timestamp: DateTime.parse(msg['timestamp']),
+        timestamp: DateTime.tryParse(msg['timestamp']?.toString() ?? '') ?? DateTime.now(),
         status: MessageStatus.sent,
         conversationId: conversationId,
       )).toList(),
@@ -246,6 +245,5 @@ Please provide a direct, helpful, and factually rich response. Explain key point
 
   static void clearConversation(String conversationId) {
     _conversationContexts.remove(conversationId);
-    _responsePatterns.remove(conversationId);
   }
 }

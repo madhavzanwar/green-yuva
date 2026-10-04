@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/disaster_event.dart';
 import '../services/news_service.dart';
-import '../widgets/disaster_event_card.dart';
 
 class ResilienceTab extends StatefulWidget {
   @override
@@ -155,11 +154,10 @@ class _ResilienceTabState extends State<ResilienceTab> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: AppColors.paperCream,
       child: Column(
         children: [
           _buildSearchBar(),
-
           Expanded(
             child: _isLoading
                 ? _buildLoadingIndicator()
@@ -172,17 +170,24 @@ class _ResilienceTabState extends State<ResilienceTab> {
 
   Widget _buildSearchBar() {
     return Container(
-      margin: EdgeInsets.all(16),
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.grey[300]!),
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.solidBlack, width: 2.0),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.solidBlack,
+            offset: Offset(2, 2.5),
+            blurRadius: 0,
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(Icons.search, color: Colors.grey[600]),
-          SizedBox(width: 12),
+          const Icon(Icons.search_rounded, color: AppColors.solidBlack, size: 20),
+          const SizedBox(width: 10),
           Expanded(
             child: TextField(
               onChanged: (value) {
@@ -190,14 +195,29 @@ class _ResilienceTabState extends State<ResilienceTab> {
                   _searchQuery = value;
                 });
               },
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.solidBlack,
+              ),
               decoration: InputDecoration(
-                hintText: 'Search disasters...',
+                hintText: 'Search alerts, landslides, floods...',
                 border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.grey[500]),
+                hintStyle: GoogleFonts.plusJakartaSans(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.solidBlack.withValues(alpha: 0.5),
+                ),
               ),
             ),
           ),
-          Icon(Icons.filter_list, color: Colors.grey[600]),
+          if (_searchQuery.isNotEmpty)
+            GestureDetector(
+              onTap: () => setState(() => _searchQuery = ''),
+              child: const Icon(Icons.close_rounded, color: AppColors.solidBlack, size: 18),
+            )
+          else
+            const Icon(Icons.tune_rounded, color: AppColors.solidBlack, size: 18),
         ],
       ),
     );
@@ -208,23 +228,26 @@ class _ResilienceTabState extends State<ResilienceTab> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+          const CircularProgressIndicator(
+            color: AppColors.solidBlack,
+            strokeWidth: 2.5,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            'Fetching real-time climate news...',
-            style: GoogleFonts.questrial(
-              fontSize: 16,
-              color: Colors.grey[600],
+            'Fetching real-time climate telemetry...',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.solidBlack,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
-            'This may take a few seconds',
-            style: GoogleFonts.questrial(
-              fontSize: 14,
-              color: Colors.grey[500],
+            'Connecting to IMD, CPCB & NDMA bulletins',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.mutedText,
             ),
           ),
         ],
@@ -238,28 +261,44 @@ class _ResilienceTabState extends State<ResilienceTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
-              color: Colors.grey[400],
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.cardWhite,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.solidBlack, width: 2.0),
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                size: 44,
+                color: AppColors.solidBlack,
+              ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 14),
             Text(
               _searchQuery.isEmpty ? 'No disaster events found' : 'No events match your search',
-              style: GoogleFonts.questrial(
-                fontSize: 18,
-                color: Colors.grey[600],
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.solidBlack,
               ),
             ),
             if (_searchQuery.isNotEmpty) ...[
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               TextButton(
                 onPressed: () {
                   setState(() {
                     _searchQuery = '';
                   });
                 },
-                child: Text('Clear search'),
+                child: Text(
+                  'Clear search',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.solidBlack,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
               ),
             ],
           ],
@@ -268,9 +307,11 @@ class _ResilienceTabState extends State<ResilienceTab> {
     }
 
     return RefreshIndicator(
+      color: AppColors.solidBlack,
+      backgroundColor: AppColors.cardWhite,
       onRefresh: _loadDisasterEvents,
       child: ListView.builder(
-        padding: EdgeInsets.symmetric(horizontal: 0),
+        padding: const EdgeInsets.only(bottom: 24),
         itemCount: _groupedEvents.length,
         itemBuilder: (context, index) {
           final groupKey = _groupedEvents.keys.elementAt(index);
@@ -280,18 +321,30 @@ class _ResilienceTabState extends State<ResilienceTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                child: Text(
-                  groupKey,
-                  style: GoogleFonts.questrial(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 6),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppColors.dustyCoral,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      groupKey,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.solidBlack,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              ...events.map((event) => _buildEventCard(event)).toList(),
-              SizedBox(height: 16),
+              ...events.map((event) => _buildEventCard(event)),
             ],
           );
         },
@@ -503,144 +556,160 @@ class _ResilienceTabState extends State<ResilienceTab> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.8,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: const BoxDecoration(
+          color: AppColors.paperCream,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(
+            top: BorderSide(color: AppColors.solidBlack, width: 2.5),
+            left: BorderSide(color: AppColors.solidBlack, width: 2.0),
+            right: BorderSide(color: AppColors.solidBlack, width: 2.0),
+          ),
         ),
         child: Column(
           children: [
             Container(
-              margin: EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
+              margin: const EdgeInsets.only(top: 10),
+              width: 44,
+              height: 5,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+                color: AppColors.solidBlack,
+                borderRadius: BorderRadius.circular(3),
               ),
             ),
 
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: _getEventTypeColor(event.type),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.solidBlack, width: 1.6),
                       ),
                       child: Text(
-                        event.type,
-                        style: GoogleFonts.questrial(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                        event.type.toUpperCase(),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: AppColors.solidBlack,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11,
                         ),
                       ),
                     ),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
                     Text(
                       event.title,
-                      style: GoogleFonts.questrial(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.solidBlack,
+                        height: 1.25,
                       ),
                     ),
 
-                    SizedBox(height: 8),
+                    const SizedBox(height: 10),
 
                     Row(
                       children: [
-                        Icon(Icons.location_on, color: Colors.grey[600], size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          event.location,
-                          style: GoogleFonts.questrial(
-                            color: Colors.grey[600],
+                        const Icon(Icons.location_on_rounded, color: AppColors.solidBlack, size: 16),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            event.location,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: AppColors.solidBlack.withValues(alpha: 0.75),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        Spacer(),
                         Text(
                           DateFormat('MMM d, y').format(event.date),
-                          style: GoogleFonts.questrial(
-                            color: Colors.grey[600],
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppColors.mutedText,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     if (event.casualties.isNotEmpty) ...[
-                      _buildInfoRow('Casualties', event.casualties),
-                      SizedBox(height: 8),
+                      _buildInfoRow('Advisory / Impact', event.casualties),
+                      const SizedBox(height: 8),
                     ],
                     if (event.damage.isNotEmpty) ...[
-                      _buildInfoRow('Damage', event.damage),
-                      SizedBox(height: 16),
+                      _buildInfoRow('Mitigation Status', event.damage),
+                      const SizedBox(height: 16),
                     ],
 
                     Text(
-                      'Description',
-                      style: GoogleFonts.questrial(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                      'Bulletin Details',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.solidBlack,
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      event.description,
-                      style: GoogleFonts.questrial(
-                        fontSize: 16,
-                        color: Colors.grey[700],
-                        height: 1.5,
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardWhite,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.solidBlack, width: 1.8),
+                      ),
+                      child: Text(
+                        event.description,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: AppColors.solidBlack.withValues(alpha: 0.85),
+                          height: 1.5,
+                        ),
                       ),
                     ),
 
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
                     Row(
                       children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                            },
-                            icon: Icon(Icons.share),
-                            label: Text('Share'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF4CAF50),
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () async {
                               try {
                                 await NewsService.launchSourceUrl(event.sourceUrl);
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Unable to open link: ${e.toString()}'),
-                                    backgroundColor: Colors.red,
-                                    duration: Duration(seconds: 3),
-                                  ),
-                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Unable to open bulletin: $e'),
+                                      backgroundColor: AppColors.dustyCoral,
+                                    ),
+                                  );
+                                }
                               }
                             },
-                            icon: Icon(Icons.open_in_new),
-                            label: Text('Read More'),
+                            icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                            label: Text(
+                              'Official Bulletin',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Color(0xFF4CAF50),
-                              padding: EdgeInsets.symmetric(vertical: 12),
+                              foregroundColor: AppColors.solidBlack,
+                              backgroundColor: AppColors.butterYellow,
+                              side: const BorderSide(color: AppColors.solidBlack, width: 2.0),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),
@@ -657,42 +726,52 @@ class _ResilienceTabState extends State<ResilienceTab> {
   }
 
   Widget _buildInfoRow(String label, String value) {
-    return Row(
-      children: [
-        Text(
-          '$label: ',
-          style: GoogleFonts.questrial(
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[700],
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: GoogleFonts.questrial(
-              color: Colors.grey[700],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.solidBlack, width: 1.4),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label: ',
+            style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              color: AppColors.solidBlack,
             ),
           ),
-        ),
-      ],
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: AppColors.solidBlack.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Color _getEventTypeColor(String type) {
     switch (type.toUpperCase()) {
       case 'LANDSLIDE':
-        return Colors.red;
+        return AppColors.dustyCoral;
       case 'FLOOD':
       case 'FLOOD: HEAVY RAIN':
-        return Colors.blue;
+        return AppColors.softSky;
       case 'TYPHOON':
-        return Colors.purple;
-      case 'EARTHQUAKE':
-        return Colors.orange;
-      case 'WILDFIRE':
-        return Colors.deepOrange;
+        return AppColors.softSky;
+      case 'AIR QUALITY':
+        return AppColors.dustyCoral;
       default:
-        return Color(0xFF4CAF50);
+        return AppColors.mintGreen;
     }
   }
 }

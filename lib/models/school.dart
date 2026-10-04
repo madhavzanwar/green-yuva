@@ -9,9 +9,9 @@ class School {
   factory School.fromMap(String id, Map<String, dynamic> data) {
     return School(
       id: id,
-      name: data['name'] ?? '',
-      imageUrl: data['imageUrl'],
-      memberCount: data['memberCount'] ?? 0,
+      name: data['name']?.toString() ?? '',
+      imageUrl: data['imageUrl']?.toString(),
+      memberCount: (data['memberCount'] as num?)?.toInt() ?? 0,
     );
   }
 

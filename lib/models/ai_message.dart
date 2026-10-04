@@ -33,23 +33,29 @@ class AIMessage {
     this.metadata,
   });
 
+  static DateTime _parseDate(dynamic dateVal) {
+    if (dateVal is Timestamp) return dateVal.toDate();
+    if (dateVal is DateTime) return dateVal;
+    if (dateVal is String) return DateTime.tryParse(dateVal) ?? DateTime.now();
+    if (dateVal is num) return DateTime.fromMillisecondsSinceEpoch(dateVal.toInt());
+    return DateTime.now();
+  }
+
   factory AIMessage.fromJson(Map<String, dynamic> json) {
     return AIMessage(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '',
       content: json['content'] ?? '',
       type: MessageType.values.firstWhere(
         (e) => e.toString() == 'MessageType.${json['type']}',
         orElse: () => MessageType.user,
       ),
-      timestamp: json['timestamp'] is Timestamp
-          ? (json['timestamp'] as Timestamp).toDate()
-          : DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
+      timestamp: _parseDate(json['timestamp']),
       status: MessageStatus.values.firstWhere(
         (e) => e.toString() == 'MessageStatus.${json['status']}',
         orElse: () => MessageStatus.sent,
       ),
-      userId: json['userId'],
-      conversationId: json['conversationId'],
+      userId: json['userId']?.toString(),
+      conversationId: json['conversationId']?.toString(),
       metadata: json['metadata'] != null
           ? Map<String, dynamic>.from(json['metadata'])
           : null,
@@ -113,17 +119,13 @@ class AIConversation {
 
   factory AIConversation.fromJson(Map<String, dynamic> json) {
     return AIConversation(
-      id: json['id'] ?? '',
-      userId: json['userId'] ?? '',
-      title: json['title'] ?? '',
-      createdAt: json['createdAt'] is Timestamp
-          ? (json['createdAt'] as Timestamp).toDate()
-          : DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      lastMessageAt: json['lastMessageAt'] is Timestamp
-          ? (json['lastMessageAt'] as Timestamp).toDate()
-          : null,
+      id: json['id']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      createdAt: AIMessage._parseDate(json['createdAt']),
+      lastMessageAt: json['lastMessageAt'] != null ? AIMessage._parseDate(json['lastMessageAt']) : null,
       messages: (json['messages'] as List<dynamic>?)
-          ?.map((m) => AIMessage.fromJson(m))
+          ?.map((m) => AIMessage.fromJson(m as Map<String, dynamic>))
           .toList() ?? [],
       settings: json['settings'] != null
           ? Map<String, dynamic>.from(json['settings'])

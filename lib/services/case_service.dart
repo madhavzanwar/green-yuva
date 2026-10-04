@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/case.dart';
 import '../utils/env_config.dart';
-import '../utils/firebase_setup.dart';
 import '../utils/populate_cases.dart';
 
 class CaseService {
@@ -341,7 +340,7 @@ class CaseService {
           climateEvent: climateEvent,
           location: location,
           impact: impact,
-          date: DateTime.parse(publishedAt),
+          date: DateTime.tryParse(publishedAt) ?? DateTime.now(),
           sourceUrl: url,
           imageUrl: imageUrl,
           severity: _determineSeverity(title, content),
@@ -355,7 +354,6 @@ class CaseService {
   }
 
   static String _extractPersonName(String title, String content) {
-
     final namePattern = RegExp(r'\b[A-Z][a-z]+ [A-Z][a-z]+\b');
     final matches = namePattern.allMatches('$title $content');
     return matches.isNotEmpty ? matches.first.group(0) ?? '' : '';
@@ -378,7 +376,6 @@ class CaseService {
   }
 
   static String _extractLocation(String title, String content) {
-
     final locationPattern = RegExp(r'\b[A-Z][a-z]+(?: [A-Z][a-z]+)*,? [A-Z]{2}\b');
     final matches = locationPattern.allMatches('$title $content');
     return matches.isNotEmpty ? matches.first.group(0) ?? '' : 'Unknown Location';
@@ -410,17 +407,6 @@ class CaseService {
       return 'medium';
     }
     return 'low';
-  }
-
-  static List<Case> _removeDuplicates(List<Case> cases) {
-    final uniqueCases = <String, Case>{};
-    for (final caseData in cases) {
-      final key = '${caseData.personName}_${caseData.climateEvent}_${caseData.date.toIso8601String()}';
-      if (!uniqueCases.containsKey(key)) {
-        uniqueCases[key] = caseData;
-      }
-    }
-    return uniqueCases.values.toList();
   }
 
   static Future<void> _saveCaseToFirebase(Case caseData) async {

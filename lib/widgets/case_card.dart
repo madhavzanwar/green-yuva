@@ -6,12 +6,12 @@ import '../theme/app_theme.dart';
 
 class CaseCard extends StatelessWidget {
   final Case caseData;
-  final VoidCallback onReview;
+  final VoidCallback? onReview;
 
   const CaseCard({
     Key? key,
     required this.caseData,
-    required this.onReview,
+    this.onReview,
   }) : super(key: key);
 
   Future<void> _openSourceUrl(BuildContext context) async {
@@ -41,23 +41,25 @@ class CaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: AppColors.cardWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.solidBlack, width: 2.0),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.solidBlack,
-            offset: Offset(3, 3),
-            blurRadius: 0,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+    return GestureDetector(
+      onTap: onReview,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: AppColors.cardWhite,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.solidBlack, width: 2.0),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.solidBlack,
+              offset: Offset(3, 3),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
