@@ -121,20 +121,15 @@ class SchoolService {
         }
 
         String schoolName = '';
-        if (data != null) {
-          final dataMap = data as Map<String, dynamic>;
-          for (String fieldName in dataMap.keys) {
-            if (fieldName != 'imageUrl' && fieldName != 'createdAt' && fieldName != 'updatedAt' && fieldName != 'name') {
-              schoolName = fieldName.replaceAll(':', '').trim();
-              break;
-            }
+        for (String fieldName in data.keys) {
+          if (fieldName != 'imageUrl' && fieldName != 'createdAt' && fieldName != 'updatedAt' && fieldName != 'name') {
+            schoolName = fieldName.replaceAll(':', '').trim();
+            break;
           }
+        }
 
-          if (schoolName.isEmpty) {
-            schoolName = dataMap['name'] ?? doc.id;
-          }
-        } else {
-          schoolName = doc.id;
+        if (schoolName.isEmpty) {
+          schoolName = data['name'] ?? doc.id;
         }
 
         final usersSnapshot = await usersCollection
@@ -146,7 +141,7 @@ class SchoolService {
         return School(
           id: doc.id,
           name: schoolName,
-          imageUrl: data != null ? (data as Map<String, dynamic>)['imageUrl'] : null,
+          imageUrl: data['imageUrl'],
           memberCount: memberCount,
         );
       }

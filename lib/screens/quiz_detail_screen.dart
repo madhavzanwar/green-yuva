@@ -627,12 +627,14 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to submit answer: $e'),
-          backgroundColor: AppColors.dustyCoral,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit answer: $e'),
+            backgroundColor: AppColors.dustyCoral,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

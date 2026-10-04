@@ -4,7 +4,6 @@ import '../models/verification_request.dart';
 import '../models/user.dart';
 import '../services/verification_service.dart';
 import '../services/user_service.dart';
-import '../utils/transitions.dart';
 
 class AdminVerificationScreen extends StatefulWidget {
   final AppUser adminUser;

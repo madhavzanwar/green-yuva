@@ -69,6 +69,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   Future<void> _joinActivity(Activity activity) async {
     try {
       await _activityService.joinActivity(widget.schoolId, activity.id, widget.user.id);
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -79,6 +80,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
       _loadActivities();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to join activity: $e'),
@@ -91,6 +93,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   Future<void> _leaveActivity(Activity activity) async {
     try {
       await _activityService.leaveActivity(widget.schoolId, activity.id, widget.user.id);
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -101,6 +104,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
       _loadActivities();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to leave activity: $e'),

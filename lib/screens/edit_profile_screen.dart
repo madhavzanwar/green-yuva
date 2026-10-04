@@ -363,6 +363,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         await currentUser.updateDisplayName(fullName);
       }
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Profile updated successfully'),
@@ -373,6 +375,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       Navigator.pop(context, true);
     } catch (e) {
       print('❌ EditProfileScreen: Error saving changes: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to update profile'),

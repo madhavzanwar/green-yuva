@@ -29,6 +29,12 @@ class VerificationRequest {
   final DateTime? reviewedAt;
   final String? reviewedBy;
   final String? reviewNotes;
+  final double? aiConfidence;
+  final String? aiClassification;
+  final bool? aiIsAuthentic;
+  final bool isProvisionalApproved;
+  final String? aiDetectedObjects;
+  final String? aiEngine;
 
   VerificationRequest({
     required this.id,
@@ -47,6 +53,12 @@ class VerificationRequest {
     this.reviewedAt,
     this.reviewedBy,
     this.reviewNotes,
+    this.aiConfidence,
+    this.aiClassification,
+    this.aiIsAuthentic,
+    this.isProvisionalApproved = false,
+    this.aiDetectedObjects,
+    this.aiEngine,
   });
 
   String get missionTitle => itemTitle;
@@ -92,6 +104,12 @@ class VerificationRequest {
       reviewedAt: _parseNullableDate(data['reviewedAt']),
       reviewedBy: data['reviewedBy']?.toString(),
       reviewNotes: data['reviewNotes']?.toString(),
+      aiConfidence: (data['aiConfidence'] as num?)?.toDouble(),
+      aiClassification: data['aiClassification']?.toString(),
+      aiIsAuthentic: data['aiIsAuthentic'] as bool?,
+      isProvisionalApproved: data['isProvisionalApproved'] == true,
+      aiDetectedObjects: data['aiDetectedObjects']?.toString(),
+      aiEngine: data['aiEngine']?.toString(),
     );
   }
 
@@ -112,6 +130,12 @@ class VerificationRequest {
       'reviewedAt': reviewedAt != null ? Timestamp.fromDate(reviewedAt!) : null,
       'reviewedBy': reviewedBy,
       'reviewNotes': reviewNotes,
+      'aiConfidence': aiConfidence,
+      'aiClassification': aiClassification,
+      'aiIsAuthentic': aiIsAuthentic,
+      'isProvisionalApproved': isProvisionalApproved,
+      'aiDetectedObjects': aiDetectedObjects,
+      'aiEngine': aiEngine,
     };
   }
 
@@ -132,6 +156,12 @@ class VerificationRequest {
     DateTime? reviewedAt,
     String? reviewedBy,
     String? reviewNotes,
+    double? aiConfidence,
+    String? aiClassification,
+    bool? aiIsAuthentic,
+    bool? isProvisionalApproved,
+    String? aiDetectedObjects,
+    String? aiEngine,
   }) {
     return VerificationRequest(
       id: id ?? this.id,
@@ -150,6 +180,12 @@ class VerificationRequest {
       reviewedAt: reviewedAt ?? this.reviewedAt,
       reviewedBy: reviewedBy ?? this.reviewedBy,
       reviewNotes: reviewNotes ?? this.reviewNotes,
+      aiConfidence: aiConfidence ?? this.aiConfidence,
+      aiClassification: aiClassification ?? this.aiClassification,
+      aiIsAuthentic: aiIsAuthentic ?? this.aiIsAuthentic,
+      isProvisionalApproved: isProvisionalApproved ?? this.isProvisionalApproved,
+      aiDetectedObjects: aiDetectedObjects ?? this.aiDetectedObjects,
+      aiEngine: aiEngine ?? this.aiEngine,
     );
   }
 

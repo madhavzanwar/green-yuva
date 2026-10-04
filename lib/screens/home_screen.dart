@@ -50,6 +50,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _mapInitialized = false;
   Set<Marker> _cachedMarkers = {};
 
+  bool get isMapInitialized => _mapInitialized;
+  Set<Marker> get cachedMarkers => _cachedMarkers;
+
   final SchoolService _schoolService = SchoolService();
   School? _userSchool;
   final AqiService _aqiService = AqiService();
@@ -130,111 +133,119 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _showCitySwitchSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppColors.paperCream,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         side: BorderSide(color: AppColors.solidBlack, width: 2.0),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.solidBlack.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.75,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.butterYellow,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.solidBlack, width: 1.5),
-                    ),
-                    child: const Icon(Icons.location_city_rounded, color: AppColors.solidBlack, size: 20),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Select Student Hub',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.solidBlack,
+                  Center(
+                    child: Container(
+                      width: 48,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: AppColors.solidBlack.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              ...AqiService.supportedCities.map((city) {
-                final isCurrent = (_cityAqi?.cityName.toLowerCase() == city.name.toLowerCase());
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: NeoCard(
-                    color: isCurrent ? AppColors.butterYellow : AppColors.cardWhite,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await _aqiService.setSelectedCity(city.name);
-                      _loadAqi();
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.butterYellow,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.solidBlack, width: 1.5),
+                        ),
+                        child: const Icon(Icons.location_city_rounded, color: AppColors.solidBlack, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Select Student Hub',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.solidBlack,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ...AqiService.supportedCities.map((city) {
+                    final isCurrent = (_cityAqi?.cityName.toLowerCase() == city.name.toLowerCase());
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: NeoCard(
+                        color: isCurrent ? AppColors.butterYellow : AppColors.cardWhite,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          await _aqiService.setSelectedCity(city.name);
+                          _loadAqi();
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              city.name,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                                color: AppColors.solidBlack,
-                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  city.name,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                    color: AppColors.solidBlack,
+                                  ),
+                                ),
+                                Text(
+                                  city.state,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    color: AppColors.mutedText,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              city.state,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                color: AppColors.mutedText,
-                              ),
-                            ),
+                            if (isCurrent)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.solidBlack,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Active Hub',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              )
+                            else
+                              const Icon(Icons.chevron_right_rounded, color: AppColors.solidBlack),
                           ],
                         ),
-                        if (isCurrent)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.solidBlack,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Active Hub',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
-                            ),
-                          )
-                        else
-                          const Icon(Icons.chevron_right_rounded, color: AppColors.solidBlack),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
           ),
         );
       },

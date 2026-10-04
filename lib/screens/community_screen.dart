@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/post.dart';
+import '../models/activity.dart';
 import '../models/user.dart';
 import '../services/post_service.dart';
 import '../services/activity_service.dart';
@@ -95,10 +96,6 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
     final maxScroll = _expandedHeight - _collapsedHeight;
     final progress = (offset / maxScroll).clamp(0.0, 1.0);
 
-    setState(() {
-      _scrollOffset = offset;
-    });
-
     _centerTitleController.value = 1.0 - progress;
     _leftTitleController.value = progress;
     _backgroundController.value = 1.0 - progress;
@@ -129,11 +126,12 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
         return;
       }
 
-      setState(() {
-        _posts = posts;
-        _activities = activities;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _posts = posts;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       print('❌ Community: Error loading data: $e');
       print('📝 Community: Loading fallback data');
@@ -160,12 +158,10 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
       ]);
 
       final posts = results[0] as List<PostWithUser>;
-      final activities = results[1] as List<Activity>;
 
       if (mounted) {
         setState(() {
           _posts = posts;
-          _activities = activities;
           _isLoading = false;
         });
         print('✅ Community: Fallback data loaded successfully');
@@ -875,6 +871,7 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
                       _loadData();
                     } catch (e) {
                       print('❌ Debug: Error creating sample data: $e');
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Error creating sample data: $e'),

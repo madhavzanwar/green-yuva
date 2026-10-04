@@ -206,7 +206,6 @@ class UserService {
       final userData = doc.data() as Map<String, dynamic>;
       int monthlyTotal = 0;
 
-      final firstDayOfMonth = DateTime(referenceDate.year, referenceDate.month, 1);
       final lastDayOfMonth = DateTime(referenceDate.year, referenceDate.month + 1, 0);
 
       for (int day = 1; day <= lastDayOfMonth.day; day++) {

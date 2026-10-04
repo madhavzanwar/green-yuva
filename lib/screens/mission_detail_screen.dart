@@ -5,8 +5,6 @@ import '../models/ecore.dart';
 import '../models/user.dart';
 import '../models/verification_request.dart';
 import '../services/verification_service.dart';
-import 'mission_proof_screen.dart';
-import '../utils/transitions.dart';
 import 'verification_request_screen.dart';
 
 class MissionDetailScreen extends StatefulWidget {

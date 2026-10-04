@@ -93,6 +93,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       print('⚠️ FirebaseAuth unavailable or timed out: $e');
       if (mounted) {
         final localUser = await UserService().getLocalUser(createIfNull: false);
+        if (!mounted) return;
         if (localUser != null) {
           Navigator.pushReplacementNamed(context, '/home');
         } else {

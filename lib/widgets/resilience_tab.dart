@@ -378,10 +378,12 @@ class _ResilienceTabState extends State<ResilienceTab> {
         iconData = Icons.warning_rounded;
     }
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: () => _showEventDetails(event),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
         color: AppColors.cardWhite,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.solidBlack, width: 2.0),
@@ -546,8 +548,9 @@ class _ResilienceTabState extends State<ResilienceTab> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showEventDetails(DisasterEvent event) {
     showModalBottomSheet(

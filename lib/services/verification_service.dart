@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/verification_request.dart';
 import '../models/user.dart';
+import 'user_service.dart';
 
 class VerificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -15,8 +16,15 @@ class VerificationService {
     required int points,
     String? proofImageUrl,
     String? description,
+    double? aiConfidence,
+    String? aiClassification,
+    bool? aiIsAuthentic,
+    bool isProvisionalApproved = false,
+    String? aiDetectedObjects,
+    String? aiEngine,
   }) async {
     try {
+      final now = DateTime.now();
       final verificationRequest = VerificationRequest(
         id: '',
         userId: user.id,
@@ -29,12 +37,29 @@ class VerificationService {
         points: points,
         proofImageUrl: proofImageUrl,
         description: description,
-        createdAt: DateTime.now(),
+        status: isProvisionalApproved ? VerificationStatus.approved : VerificationStatus.pending,
+        createdAt: now,
+        reviewedAt: isProvisionalApproved ? now : null,
+        reviewedBy: isProvisionalApproved ? '🤖 Gemini Vision AI Green Lens' : null,
+        reviewNotes: isProvisionalApproved
+            ? (aiClassification ?? 'Provisional Approval granted by Gemini Vision AI Green Lens')
+            : (aiClassification != null ? 'AI Review Note: $aiClassification' : null),
+        aiConfidence: aiConfidence,
+        aiClassification: aiClassification,
+        aiIsAuthentic: aiIsAuthentic,
+        isProvisionalApproved: isProvisionalApproved,
+        aiDetectedObjects: aiDetectedObjects,
+        aiEngine: aiEngine,
       );
 
       await _firestore
           .collection('verification_requests')
           .add(verificationRequest.toMap());
+
+      // If approved provisionally by AI Green Lens, credit points immediately!
+      if (isProvisionalApproved) {
+        await UserService().addUserPoints(user.id, points);
+      }
     } catch (e) {
       print('Notice: Verification stored locally/fallback: $e');
     }
