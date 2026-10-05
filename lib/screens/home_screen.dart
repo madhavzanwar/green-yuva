@@ -27,6 +27,8 @@ import '../widgets/green_rush_radar_map.dart';
 import '../services/language_service.dart';
 import 'karma_canteen_screen.dart';
 import 'green_passport_screen.dart';
+import 'green_commute_screen.dart';
+import '../services/green_commute_service.dart';
 import '../services/aqi_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -90,6 +92,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _loadAqi();
     _getCurrentLocation();
     _loadUserSchool();
+    GreenCommuteService().init();
   }
 
   @override
@@ -413,6 +416,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     _buildStatCardsRow(),
                     const SizedBox(height: 16),
                     _buildWeeklyProgressCard(),
+                    const SizedBox(height: 16),
+                    _buildGreenCommuteBanner(),
                     const SizedBox(height: 16),
                     _buildGreenPassportBanner(),
                     const SizedBox(height: 16),
@@ -950,6 +955,145 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// Feature 5: Intra-Campus "Step-to-Karma" Green Commute Tracker Banner
+  Widget _buildGreenCommuteBanner() {
+    final commuteData = GreenCommuteService().data;
+
+    return NeoCard(
+      color: AppColors.cardWhite,
+      radius: 20,
+      borderWidth: 2.2,
+      shadowOffset: const Offset(3.5, 4.0),
+      padding: const EdgeInsets.all(16),
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => GreenCommuteScreen(user: widget.user)),
+        );
+        if (mounted) {
+          _loadData();
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              NeoPulseBadge(
+                label: commuteData.isInsideCampus ? 'GEOFENCE ACTIVE • ON CAMPUS' : 'CAMPUS PERIMETER',
+                badgeColor: commuteData.isInsideCampus ? AppColors.electricMint : AppColors.butterYellow,
+                dotColor: commuteData.isInsideCampus ? const Color(0xFF1B5E20) : AppColors.solidBlack,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.butterYellow,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.solidBlack, width: 1.4),
+                ),
+                child: Text(
+                  '🔥 ${commuteData.streakDays}-Day Streak',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.solidBlack,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.butterYellow,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.solidBlack, width: 2.0),
+                ),
+                child: const Icon(Icons.directions_walk_rounded, color: AppColors.solidBlack, size: 28),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Step-to-Karma Green Commute',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.solidBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${commuteData.stepsToday} steps today • ${(commuteData.co2SavedKg).toStringAsFixed(2)} kg CO2e saved vs. petrol motorbike',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.solidBlack.withValues(alpha: 0.8),
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.paperCream,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.solidBlack, width: 1.8),
+                ),
+                child: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppColors.solidBlack),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.paperCream,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.solidBlack, width: 1.2),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.stars_rounded, size: 14, color: AppColors.solidBlack),
+                    const SizedBox(width: 4),
+                    Text(
+                      '1 Karma Coin / 500 Steps',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.solidBlack,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  'Redeem at Canteen ☕',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.leafGreen,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

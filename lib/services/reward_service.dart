@@ -16,6 +16,17 @@ class RewardService {
 
   final List<RewardItem> availableRewards = const [
     RewardItem(
+      id: 'reward_samosa_tea_50',
+      title: 'Afternoon Iced Lemon Tea & Samosa Combo',
+      description: 'Redeem your Green Commute steps for a refreshing iced lemon tea and crispy vegetable samosa at the campus Karma Canteen. Zero tailpipe, zero guilt!',
+      karmaCost: 50,
+      icon: Icons.fastfood_rounded,
+      category: 'Canteen',
+      badgeLabel: 'Green Commute Perk',
+      voucherInstructions: 'Present this digital voucher QR code at the Karma Canteen beverage counter between 12:00 PM and 6:00 PM.',
+      accentColor: AppColors.butterYellow,
+    ),
+    RewardItem(
       id: 'reward_tea_100',
       title: 'Free Steel Tumbler Tea at Campus Canteen',
       description: 'Enjoy a freshly brewed tea or coffee at the college canteen in an eco-friendly reusable steel tumbler. Eliminates single-use paper cups!',
