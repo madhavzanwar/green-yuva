@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
@@ -25,13 +25,15 @@ class LocationService {
   /// Proactively requests permissions if not yet granted.
   /// Falls back to default campus coordinates if permission is denied, disabled, or times out.
   static Future<Position> determinePosition({
-    Duration timeLimit = const Duration(seconds: 4),
+    Duration timeLimit = const Duration(seconds: 15),
   }) async {
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        debugPrint('⚠️ Location services are disabled. Using campus fallback.');
-        return getDefaultPosition();
+      if (!kIsWeb) {
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          debugPrint('⚠️ Location services are disabled. Using campus fallback.');
+          return getDefaultPosition();
+        }
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -50,7 +52,7 @@ class LocationService {
 
       // Permission is granted, attempt to fetch position with timeout
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
+        desiredAccuracy: LocationAccuracy.high,
         timeLimit: timeLimit,
       );
 
@@ -72,6 +74,35 @@ class LocationService {
       return permission == LocationPermission.always || permission == LocationPermission.whileInUse;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Calculates geodesic distance in meters between two lat/long points
+  static double calculateDistanceInMeters(
+    double startLatitude,
+    double startLongitude,
+    double endLatitude,
+    double endLongitude,
+  ) {
+    try {
+      return Geolocator.distanceBetween(
+        startLatitude,
+        startLongitude,
+        endLatitude,
+        endLongitude,
+      );
+    } catch (_) {
+      return 0.0;
+    }
+  }
+
+  /// Formats meter distance into user-friendly text (e.g., '350 m away', '2.4 km away')
+  static String formatDistance(double meters) {
+    if (meters <= 0) return 'Nearby';
+    if (meters < 1000) {
+      return '${meters.round()}m away';
+    } else {
+      return '${(meters / 1000).toStringAsFixed(1)} km away';
     }
   }
 }

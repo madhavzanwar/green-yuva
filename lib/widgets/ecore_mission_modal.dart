@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/ecore.dart';
 import '../models/user.dart';
 import '../screens/mission_proof_screen.dart';
@@ -132,6 +133,57 @@ class _EcoreMissionModalState extends State<EcoreMissionModal> {
               ],
             ),
           ),
+
+          // GPS Directions Action Bar (SchemeSetu style)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final url = 'https://www.google.com/maps/dir/?api=1&destination=${widget.ecore.latitude},${widget.ecore.longitude}';
+                      final uri = Uri.parse(url);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.electricMint,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.solidBlack, width: 2.0),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: AppColors.solidBlack,
+                            offset: Offset(2, 2),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.directions_rounded, size: 18, color: AppColors.solidBlack),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Get GPS Directions to Campus ↗',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                              color: AppColors.solidBlack,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
 
           const Divider(color: AppColors.solidBlack, thickness: 1.5),
 

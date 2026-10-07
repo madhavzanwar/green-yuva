@@ -1,22 +1,33 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' as ll;
 import 'package:url_launcher/url_launcher.dart';
 import '../models/ecore.dart';
 import '../theme/app_theme.dart';
+import '../services/location_service.dart';
 
-/// Neo-Brutalist GreenRush Interactive Radar Map.
-/// Displays an animated tactical radar map with realistic campus terrain,
-/// interactive Ecore action hubs, pulsing user location, and animated sweep line.
-/// Never goes blank even when Google Maps API key is missing or offline.
+enum RadarMapDisplayMode {
+  satellite,
+  street,
+  tacticalRadar,
+}
+
+/// Neo-Brutalist GreenRush Interactive Radar & Satellite Map.
+/// Displays high-resolution satellite imagery (Esri World Imagery) and OpenStreetMap
+/// with zero GPS keys required (Samarth / SchemeSetu inspired).
+/// Includes interactive campus markers, live GPS distance calculation,
+/// auto-locate positioning, and 1-tap Google Maps GPS turn-by-turn navigation.
 class GreenRushRadarMap extends StatefulWidget {
   final List<Ecore> ecores;
-  final LatLng? userLocation;
+  final gmaps.LatLng? userLocation;
   final Ecore? selectedEcore;
   final Function(Ecore ecore)? onEcoreTap;
   final bool isCompact;
   final VoidCallback? onOpenFullMap;
+  final Function(gmaps.LatLng newLocation)? onLocationUpdated;
 
   const GreenRushRadarMap({
     Key? key,
@@ -26,6 +37,7 @@ class GreenRushRadarMap extends StatefulWidget {
     this.onEcoreTap,
     this.isCompact = false,
     this.onOpenFullMap,
+    this.onLocationUpdated,
   }) : super(key: key);
 
   @override
@@ -35,13 +47,18 @@ class GreenRushRadarMap extends StatefulWidget {
 class _GreenRushRadarMapState extends State<GreenRushRadarMap>
     with SingleTickerProviderStateMixin {
   late AnimationController _sweepController;
-  bool _showGoogleMap = true;
-  MapType _currentMapType = MapType.normal;
-  GoogleMapController? _googleMapController;
+  RadarMapDisplayMode _displayMode = RadarMapDisplayMode.satellite;
+  final MapController _flutterMapController = MapController();
+  late gmaps.LatLng _currentUserLocation;
+  Ecore? _activeSelectedEcore;
+  bool _isLocating = false;
+  double _currentZoom = 13.5;
 
   @override
   void initState() {
     super.initState();
+    _currentUserLocation = widget.userLocation ?? const gmaps.LatLng(18.5204, 73.8567);
+    _activeSelectedEcore = widget.selectedEcore ?? (widget.ecores.isNotEmpty ? widget.ecores.first : null);
     _sweepController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -49,97 +66,617 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
   }
 
   @override
+  void didUpdateWidget(covariant GreenRushRadarMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.userLocation != null && widget.userLocation != oldWidget.userLocation) {
+      setState(() {
+        _currentUserLocation = widget.userLocation!;
+      });
+      _moveMapTo(widget.userLocation!.latitude, widget.userLocation!.longitude);
+    }
+    if (widget.selectedEcore != null && widget.selectedEcore != oldWidget.selectedEcore) {
+      setState(() {
+        _activeSelectedEcore = widget.selectedEcore;
+      });
+      _moveMapTo(widget.selectedEcore!.latitude, widget.selectedEcore!.longitude, zoom: 15.0);
+    }
+  }
+
+  void _moveMapTo(double lat, double lng, {double? zoom}) {
+    final targetZoom = zoom ?? _currentZoom;
+    try {
+      _flutterMapController.move(ll.LatLng(lat, lng), targetZoom);
+      _currentZoom = targetZoom;
+    } catch (_) {}
+  }
+
+  Future<void> _triggerGpsRadar({bool showFeedback = true}) async {
+    if (_isLocating) return;
+    setState(() {
+      _isLocating = true;
+    });
+
+    try {
+      final pos = await LocationService.determinePosition();
+      final newLatLng = gmaps.LatLng(pos.latitude, pos.longitude);
+      if (mounted) {
+        setState(() {
+          _currentUserLocation = newLatLng;
+          _isLocating = false;
+        });
+
+        widget.onLocationUpdated?.call(newLatLng);
+        _moveMapTo(pos.latitude, pos.longitude, zoom: 15.5);
+
+        if (showFeedback) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.solidBlack,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppColors.electricMint, width: 2.0),
+              ),
+              content: Row(
+                children: [
+                  const Icon(Icons.gps_fixed_rounded, color: AppColors.electricMint, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'GPS Locked: ${newLatLng.latitude.toStringAsFixed(4)}° N, ${newLatLng.longitude.toStringAsFixed(4)}° E',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLocating = false;
+        });
+      }
+    }
+  }
+
+  Ecore? _getNearestEcore() {
+    if (widget.ecores.isEmpty) return null;
+    Ecore? nearest;
+    double minDistance = double.infinity;
+    for (final ecore in widget.ecores) {
+      final d = LocationService.calculateDistanceInMeters(
+        _currentUserLocation.latitude,
+        _currentUserLocation.longitude,
+        ecore.latitude,
+        ecore.longitude,
+      );
+      if (d < minDistance) {
+        minDistance = d;
+        nearest = ecore;
+      }
+    }
+    return nearest;
+  }
+
+  String _getNearestHubText() {
+    final nearest = _getNearestEcore();
+    if (nearest == null) return 'No Active Hubs';
+    final d = LocationService.calculateDistanceInMeters(
+      _currentUserLocation.latitude,
+      _currentUserLocation.longitude,
+      nearest.latitude,
+      nearest.longitude,
+    );
+    final distStr = LocationService.formatDistance(d);
+    return 'Nearest: ${nearest.name} • $distStr';
+  }
+
+  Future<void> _openDirectionsInGoogleMaps(double lat, double lng) async {
+    final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
   void dispose() {
     _sweepController.dispose();
-    _googleMapController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_showGoogleMap) {
-      return _buildGoogleMapView();
+    if (_displayMode == RadarMapDisplayMode.tacticalRadar) {
+      return _buildTacticalRadarView();
     }
-    return _buildTacticalRadarView();
+    return _buildFlutterMapView();
   }
 
-  Widget _buildGoogleMapView() {
-    final pos = widget.userLocation ?? const LatLng(18.5204, 73.8567);
-    final markers = <Marker>{};
-
-    markers.add(
-      Marker(
-        markerId: const MarkerId('user_loc'),
-        position: pos,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        infoWindow: const InfoWindow(title: 'Your Campus Location', snippet: 'Green Yuva Active'),
-      ),
-    );
-
-    for (final ecore in widget.ecores) {
-      markers.add(
-        Marker(
-          markerId: MarkerId('ecore_${ecore.id}'),
-          position: LatLng(ecore.latitude, ecore.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            ecore.isConquered ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueOrange,
-          ),
-          infoWindow: InfoWindow(
-            title: ecore.name,
-            snippet: '${ecore.missions.length} Missions • ${ecore.totalPoints} Karma',
-            onTap: () => widget.onEcoreTap?.call(ecore),
-          ),
-        ),
-      );
-    }
+  Widget _buildFlutterMapView() {
+    final isSatellite = _displayMode == RadarMapDisplayMode.satellite;
+    final pos = _currentUserLocation;
 
     return Stack(
       children: [
-        GoogleMap(
-          onMapCreated: (ctrl) => _googleMapController = ctrl,
-          initialCameraPosition: CameraPosition(target: pos, zoom: 16.5),
-          mapType: _currentMapType,
-          markers: markers,
-          myLocationEnabled: true,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          compassEnabled: true,
-          buildingsEnabled: true,
+        // 1. High Resolution Keyless Map (Esri Satellite or OpenStreetMap)
+        FlutterMap(
+          mapController: _flutterMapController,
+          options: MapOptions(
+            initialCenter: ll.LatLng(pos.latitude, pos.longitude),
+            initialZoom: _currentZoom,
+            minZoom: 3.0,
+            maxZoom: 18.5,
+            onTap: (tapPosition, point) {
+              setState(() {
+                _activeSelectedEcore = null;
+              });
+            },
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: isSatellite
+                  ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                  : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.greenyuva.app',
+              maxZoom: 19,
+            ),
+
+            // Markers Layer (User GPS Pin + All Campuses)
+            MarkerLayer(
+              markers: [
+                // Real User Location Marker
+                Marker(
+                  point: ll.LatLng(pos.latitude, pos.longitude),
+                  width: 50,
+                  height: 50,
+                  child: _buildUserLocationPin(),
+                ),
+
+                // College & University Markers
+                ...widget.ecores.map((ecore) {
+                  final isSelected = _activeSelectedEcore?.id == ecore.id;
+                  final dist = LocationService.calculateDistanceInMeters(
+                    pos.latitude,
+                    pos.longitude,
+                    ecore.latitude,
+                    ecore.longitude,
+                  );
+                  final distStr = LocationService.formatDistance(dist);
+
+                  return Marker(
+                    point: ll.LatLng(ecore.latitude, ecore.longitude),
+                    width: isSelected ? 150 : 130,
+                    height: 56,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _activeSelectedEcore = ecore;
+                        });
+                        _moveMapTo(ecore.latitude, ecore.longitude, zoom: 15.5);
+                        widget.onEcoreTap?.call(ecore);
+                      },
+                      child: _buildMapPinBadge(ecore, isSelected, distStr),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ],
         ),
+
+        // 2. Top Bar: Coordinates Pill & Mode Switchers
         Positioned(
           top: 12,
-          right: 12,
+          left: 14,
+          right: 14,
+          child: Row(
+            children: [
+              // GPS Status Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.pureWhite,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.solidBlack, width: 1.8),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.solidBlack,
+                      offset: Offset(2, 2),
+                      blurRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isLocating ? AppColors.butterYellow : AppColors.leafGreen,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _isLocating
+                          ? 'Locating...'
+                          : '${pos.latitude.toStringAsFixed(3)}°, ${pos.longitude.toStringAsFixed(3)}°',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.solidBlack,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+
+              // Locate Me GPS Button
+              _buildGpsRadarButton(),
+            ],
+          ),
+        ),
+
+        // 3. Right Map Control Stack (Mode Toggle, Zoom, Re-center, All India)
+        Positioned(
+          top: 56,
+          right: 14,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _buildMapModeToggle(),
+              _buildViewModeTogglePill(),
               const SizedBox(height: 6),
-              _buildSatelliteToggle(),
+              _buildTacticalRadarPill(),
               const SizedBox(height: 6),
               _buildCenterGpsButton(pos),
               const SizedBox(height: 6),
               _buildAllIndiaButton(),
               const SizedBox(height: 6),
-              _buildOpenInMapsButton(pos),
+              _buildZoomControls(),
             ],
+          ),
+        ),
+
+        // 4. Selected College Bottom Drawer / Detail Card (Samarth Inspired)
+        if (_activeSelectedEcore != null)
+          Positioned(
+            bottom: widget.isCompact ? 10 : 110,
+            left: 14,
+            right: 14,
+            child: _buildCampusDetailBanner(_activeSelectedEcore!, pos),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMapPinBadge(Ecore ecore, bool isSelected, String distStr) {
+    final acronym = ecore.name.split('—').first.trim().split(' ').first;
+    final pinColor = ecore.isConquered ? AppColors.electricMint : AppColors.butterYellow;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.dustyCoral : pinColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.solidBlack, width: isSelected ? 2.0 : 1.6),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.solidBlack,
+                offset: Offset(2, 2),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                ecore.isConquered ? Icons.eco_rounded : Icons.school_rounded,
+                size: 11,
+                color: AppColors.solidBlack,
+              ),
+              const SizedBox(width: 3),
+              Flexible(
+                child: Text(
+                  acronym,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.solidBlack,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                decoration: BoxDecoration(
+                  color: AppColors.cardWhite,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppColors.solidBlack, width: 0.8),
+                ),
+                child: Text(
+                  distStr,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 8.0,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.solidBlack,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Pin pointer triangle
+        CustomPaint(
+          size: const Size(8, 5),
+          painter: _TrianglePainter(
+            color: isSelected ? AppColors.dustyCoral : pinColor,
+            borderColor: AppColors.solidBlack,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSatelliteToggle() {
-    final isSatellite = _currentMapType == MapType.hybrid;
+  Widget _buildCampusDetailBanner(Ecore ecore, gmaps.LatLng userPos) {
+    final dist = LocationService.calculateDistanceInMeters(
+      userPos.latitude,
+      userPos.longitude,
+      ecore.latitude,
+      ecore.longitude,
+    );
+    final distStr = LocationService.formatDistance(dist);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.solidBlack, width: 2.2),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.solidBlack,
+            offset: Offset(3, 4),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: ecore.isConquered ? AppColors.electricMint : AppColors.softSky,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.solidBlack, width: 1.4),
+                ),
+                child: Text(
+                  ecore.isConquered ? 'VERIFIED GREEN CELL' : 'CAMPUS HUB',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.solidBlack,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.butterYellow,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.solidBlack, width: 1.0),
+                ),
+                child: Text(
+                  '📍 $distStr',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.solidBlack,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _activeSelectedEcore = null;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: AppColors.paperCream,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.solidBlack, width: 1.2),
+                  ),
+                  child: const Icon(Icons.close_rounded, size: 14, color: AppColors.solidBlack),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            ecore.name,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w900,
+              color: AppColors.solidBlack,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (ecore.conqueredBySchoolName != null)
+            Text(
+              ecore.conqueredBySchoolName!,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              // Google Maps Directions (SchemeSetu / Samarth style)
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _openDirectionsInGoogleMaps(ecore.latitude, ecore.longitude),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.butterYellow,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.solidBlack, width: 1.6),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.solidBlack,
+                          offset: Offset(2, 2),
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.directions_rounded, size: 14, color: AppColors.solidBlack),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Get Directions ↗',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.solidBlack,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Missions / Action Hub Button
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => widget.onEcoreTap?.call(ecore),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.electricMint,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.solidBlack, width: 1.6),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.solidBlack,
+                          offset: Offset(2, 2),
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.bolt_rounded, size: 14, color: AppColors.solidBlack),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Start Quests (${ecore.missions.length})',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.solidBlack,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGpsRadarButton() {
+    return GestureDetector(
+      onTap: () => _triggerGpsRadar(showFeedback: true),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+        decoration: BoxDecoration(
+          color: _isLocating ? AppColors.butterYellow : AppColors.electricMint,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.solidBlack, width: 2.0),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.solidBlack,
+              offset: Offset(2, 2),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _isLocating
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: AppColors.solidBlack,
+                    ),
+                  )
+                : const Icon(Icons.gps_fixed_rounded, size: 15, color: AppColors.solidBlack),
+            const SizedBox(width: 5),
+            Text(
+              _isLocating ? 'Locating...' : 'GPS Radar',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                color: AppColors.solidBlack,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildViewModeTogglePill() {
+    final isSatellite = _displayMode == RadarMapDisplayMode.satellite;
     return GestureDetector(
       onTap: () {
         setState(() {
-          _currentMapType = isSatellite ? MapType.normal : MapType.hybrid;
+          _displayMode = isSatellite ? RadarMapDisplayMode.street : RadarMapDisplayMode.satellite;
         });
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSatellite ? AppColors.electricMint : AppColors.pureWhite,
+          color: isSatellite ? AppColors.butterYellow : AppColors.pureWhite,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.solidBlack, width: 1.8),
           boxShadow: const [
@@ -154,13 +691,13 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              isSatellite ? Icons.map_rounded : Icons.satellite_alt_rounded,
+              isSatellite ? Icons.satellite_alt_rounded : Icons.map_rounded,
               size: 13,
               color: AppColors.solidBlack,
             ),
             const SizedBox(width: 4),
             Text(
-              isSatellite ? 'Street Map' : 'Satellite',
+              isSatellite ? '🛰️ Satellite' : '🗺️ Street Map',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w800,
@@ -171,19 +708,24 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
         ),
       ),
     );
+  }
+
+  Widget _buildTacticalRadarPill() {
+    return _buildMapModeToggle();
   }
 
   Widget _buildMapModeToggle() {
+    final isRadar = _displayMode == RadarMapDisplayMode.tacticalRadar;
     return GestureDetector(
       onTap: () {
         setState(() {
-          _showGoogleMap = !_showGoogleMap;
+          _displayMode = isRadar ? RadarMapDisplayMode.satellite : RadarMapDisplayMode.tacticalRadar;
         });
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.butterYellow,
+          color: isRadar ? AppColors.butterYellow : AppColors.electricMint,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.solidBlack, width: 1.8),
           boxShadow: const [
@@ -198,13 +740,13 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              _showGoogleMap ? Icons.radar_rounded : Icons.map_rounded,
+              isRadar ? Icons.satellite_alt_rounded : Icons.radar_rounded,
               size: 13,
               color: AppColors.solidBlack,
             ),
             const SizedBox(width: 4),
             Text(
-              _showGoogleMap ? 'Tactical Radar' : 'Satellite / Maps',
+              isRadar ? '🛰️ Satellite Map' : '🎯 Cyber Radar',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w800,
@@ -217,14 +759,10 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
     );
   }
 
-  Widget _buildCenterGpsButton(LatLng pos) {
+  Widget _buildCenterGpsButton(gmaps.LatLng pos) {
     return GestureDetector(
       onTap: () {
-        _googleMapController?.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: pos, zoom: 17.0),
-          ),
-        );
+        _moveMapTo(pos.latitude, pos.longitude, zoom: 15.5);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -262,11 +800,7 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
   Widget _buildAllIndiaButton() {
     return GestureDetector(
       onTap: () {
-        _googleMapController?.animateCamera(
-          CameraUpdate.newCameraPosition(
-            const CameraPosition(target: LatLng(21.5, 78.9629), zoom: 4.8),
-          ),
-        );
+        _moveMapTo(21.0, 78.5, zoom: 4.8);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -301,44 +835,44 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
     );
   }
 
-  Widget _buildOpenInMapsButton(LatLng pos) {
-    return GestureDetector(
-      onTap: () async {
-        final url = 'https://www.google.com/maps/search/?api=1&query=${pos.latitude},${pos.longitude}';
-        final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.dustyCoral,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.solidBlack, width: 1.8),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.solidBlack,
-              offset: Offset(2, 2),
-              blurRadius: 0,
+  Widget _buildZoomControls() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.solidBlack, width: 1.8),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.solidBlack,
+            offset: Offset(2, 2),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () {
+              final newZoom = math.min(18.5, _currentZoom + 1.0);
+              _moveMapTo(_currentUserLocation.latitude, _currentUserLocation.longitude, zoom: newZoom);
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Icon(Icons.add_rounded, size: 16, color: AppColors.solidBlack),
             ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.open_in_new_rounded, size: 13, color: AppColors.solidBlack),
-            const SizedBox(width: 4),
-            Text(
-              'Live Street View',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-                color: AppColors.solidBlack,
-              ),
+          ),
+          Container(height: 1, width: 22, color: AppColors.solidBlack),
+          GestureDetector(
+            onTap: () {
+              final newZoom = math.max(3.0, _currentZoom - 1.0);
+              _moveMapTo(_currentUserLocation.latitude, _currentUserLocation.longitude, zoom: newZoom);
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Icon(Icons.remove_rounded, size: 16, color: AppColors.solidBlack),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -403,7 +937,7 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
                   child: _buildEcorePinWidget(ecore, isSelected),
                 ),
               );
-            }).toList(),
+            }),
 
             // User GPS Location Pin (Center-slanted)
             Positioned(
@@ -412,25 +946,24 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
               child: _buildUserLocationPin(),
             ),
 
-            // Top-Right Controls (Toggle & Zoom hints)
+            // Top-Left Coordinates Pill
             if (!widget.isCompact)
               Positioned(
                 top: 12,
-                right: 12,
-                child: _buildMapModeToggle(),
-              ),
-
-            // Bottom Radar Info Pill (Full map mode)
-            if (!widget.isCompact)
-              Positioned(
-                bottom: 160,
                 left: 14,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.pureWhite.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.solidBlack, width: 1.4),
+                    color: AppColors.pureWhite,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.solidBlack, width: 1.8),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.solidBlack,
+                        offset: Offset(2, 2),
+                        blurRadius: 0,
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -438,21 +971,87 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.leafGreen,
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          color: _isLocating ? AppColors.butterYellow : AppColors.leafGreen,
                         ),
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Live Climate Radar • 8 Hubs Active',
+                        _isLocating
+                            ? 'GPS Scanning...'
+                            : 'GPS: ${_currentUserLocation.latitude.toStringAsFixed(4)}°, ${_currentUserLocation.longitude.toStringAsFixed(4)}°',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w800,
                           color: AppColors.solidBlack,
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+
+            // Top-Right Controls (GPS Radar button & Toggle)
+            if (!widget.isCompact)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _buildGpsRadarButton(),
+                    const SizedBox(height: 6),
+                    _buildMapModeToggle(),
+                  ],
+                ),
+              ),
+
+            // Bottom Radar Info Pill (Full map mode - Clickable for GPS)
+            if (!widget.isCompact)
+              Positioned(
+                bottom: 160,
+                left: 14,
+                child: GestureDetector(
+                  onTap: () async {
+                    final nearest = _getNearestEcore();
+                    if (nearest != null) {
+                      final url = 'https://www.google.com/maps/dir/?api=1&destination=${nearest.latitude},${nearest.longitude}';
+                      final uri = Uri.parse(url);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.pureWhite.withValues(alpha: 0.94),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.solidBlack, width: 1.6),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.solidBlack,
+                          offset: Offset(2, 2),
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.near_me_rounded, size: 14, color: AppColors.solidBlack),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${_getNearestHubText()} • Tap for GPS ↗',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.solidBlack,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
