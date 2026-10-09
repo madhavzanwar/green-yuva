@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.util.Base64
 
 plugins {
     id("com.android.application")
@@ -49,7 +50,7 @@ android {
         if (googleMapsApiKey.isNotEmpty()) {
             manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = googleMapsApiKey
         } else {
-            val defaultKey = String(java.util.Base64.getDecoder().decode("QUl6YVN5Q09sVDQwMVVzakkzTnhxLUtMQkRqaG9wNkNuMzlzMnRN"))
+            val defaultKey = String(Base64.getDecoder().decode("QUl6YVN5Q09sVDQwMVVzakkzTnhxLUtMQkRqaG9wNkNuMzlzMnRN"))
             manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = defaultKey
         }
     }
