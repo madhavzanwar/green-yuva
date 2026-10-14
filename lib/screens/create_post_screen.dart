@@ -71,7 +71,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   void _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_loading || !_formKey.currentState!.validate()) return;
 
     setState(() { _loading = true; });
 
@@ -225,6 +225,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter some content';
+                    }
+                    if (value.trim().length > 2000) {
+                      return 'Post must be 2000 characters or fewer';
                     }
                     return null;
                   },

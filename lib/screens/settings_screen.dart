@@ -42,6 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSettings() async {
     try {
       final notificationsEnabled = await _notificationService.isNotificationsEnabled();
+      if (!mounted) return;
       setState(() {
         _notificationsEnabled = notificationsEnabled;
         _selectedLanguage = _languageService.currentLanguageName;
@@ -49,6 +50,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       // Non-critical settings load error
     }
+  }
+
+  @override
+  void dispose() {
+    _newsletterEmailController.dispose();
+    super.dispose();
   }
 
   @override
@@ -376,6 +383,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } else {
         await _notificationService.disableNotifications();
       }
+      if (!mounted) return;
       setState(() {
         _notificationsEnabled = value;
       });

@@ -139,7 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
       for (final progress in userProgress) {
         final quiz = await QuizService.getQuizById(progress.quizId);
-        if (quiz != null) {
+        if (quiz != null && progress.totalQuestions > 0) {
           final score = (progress.correctAnswers / progress.totalQuestions * 100).round();
           int pointsEarned = 0;
 

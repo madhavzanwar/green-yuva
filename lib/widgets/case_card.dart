@@ -20,7 +20,7 @@ class CaseCard extends StatelessWidget {
         final uri = Uri.parse(caseData.sourceUrl);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
+        } else if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Could not open link: ${caseData.sourceUrl}'),
@@ -29,6 +29,7 @@ class CaseCard extends StatelessWidget {
           );
         }
       } catch (e) {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening link: $e'),

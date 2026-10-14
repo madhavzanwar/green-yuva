@@ -38,10 +38,15 @@ class _GreenPassportScreenState extends State<GreenPassportScreen>
 
   Future<void> _loadPassport() async {
     setState(() => _isLoading = true);
-    final passport = await _passportService.generatePassportForUser(widget.user);
+    GreenPassport? passport;
+    try {
+      passport = await _passportService.generatePassportForUser(widget.user);
+    } catch (e) {
+      debugPrint('GreenPassport load failed: $e');
+    }
     if (mounted) {
       setState(() {
-        _passport = passport;
+        _passport = passport ?? _passport;
         _isLoading = false;
       });
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show SetOptions;
 import '../models/user.dart';
 import '../services/user_service.dart';
 import 'profile_picture_upload_screen.dart';
@@ -45,8 +46,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _loadUserData() {
-    _firstNameController.text = widget.user.firstName;
-    _lastNameController.text = widget.user.lastName;
+    _firstNameController.text = widget.user.fullName;
+    _lastNameController.text = '';
     _emailController.text = FirebaseAuth.instance.currentUser?.email ?? '';
 
     if (_selectedDate == null) {
@@ -352,15 +353,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       if (mounted) setState(() => _isLoading = true);
 
-      await UserService().usersCollection.doc(widget.user.id).update({
-        'firstName': _firstNameController.text.trim(),
-        'lastName': _lastNameController.text.trim(),
-      });
+      // The single "Full name" field holds first + last name; split it back.
+      final nameParts = _firstNameController.text.trim().split(RegExp(r'\s+'));
+      final newFirst = nameParts.first;
+      final newLast = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
+      final userService = UserService();
+      // Local/guest users may have no Firestore doc, so merge-set instead of update
+      // and persist locally so the change survives offline.
+      final cached = await userService.getLocalUser(createIfNull: false);
+      await userService.saveCurrentLocalUser(
+        ((cached != null && cached.id == widget.user.id) ? cached : widget.user)
+            .copyWith(firstName: newFirst, lastName: newLast),
+      );
+      try {
+        await userService.usersCollection
+            .doc(widget.user.id)
+            .set({'firstName': newFirst, 'lastName': newLast}, SetOptions(merge: true))
+            .timeout(const Duration(seconds: 5));
+      } catch (e) {
+        print('⚠️ EditProfileScreen: remote save skipped: $e');
+      }
 
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null) {
-        final fullName = '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim();
-        await currentUser.updateDisplayName(fullName);
+        try {
+          await currentUser.updateDisplayName('$newFirst $newLast'.trim());
+        } catch (_) {}
       }
 
       if (!mounted) return;

@@ -347,11 +347,14 @@ class _ActivityCardState extends State<ActivityCard> {
   }
 
   String _formatDate(DateTime date) {
+    // Compare calendar days (not 24h spans) so e.g. tomorrow-morning is not 'Today'
     final now = DateTime.now();
-    final diff = date.difference(now);
-    if (diff.inDays == 0) return 'Today';
-    if (diff.inDays == 1) return 'Tomorrow';
-    if (diff.inDays > 1 && diff.inDays < 7) return 'In ${diff.inDays}d';
+    final days = DateTime(date.year, date.month, date.day)
+        .difference(DateTime(now.year, now.month, now.day))
+        .inDays;
+    if (days == 0) return 'Today';
+    if (days == 1) return 'Tomorrow';
+    if (days > 1 && days < 7) return 'In ${days}d';
     return '${date.day}/${date.month}';
   }
 }

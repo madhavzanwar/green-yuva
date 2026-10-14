@@ -139,7 +139,7 @@ class PostCard extends StatelessWidget {
               ),
             ),
 
-            if (post.imageUrl != null) ...[
+            if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
               const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(14),

@@ -90,7 +90,7 @@ class _VerificationRequestScreenState extends State<VerificationRequestScreen> {
   }
 
   Future<void> _submitVerificationRequest() async {
-    if (_isSubmitting) return;
+    if (_isSubmitting || _isUploadingImage) return;
 
     if (_descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -107,6 +107,25 @@ class _VerificationRequestScreenState extends State<VerificationRequestScreen> {
     });
 
     try {
+      final alreadyPending = await _verificationService.hasPendingVerification(
+        userId: widget.user.id,
+        itemId: widget.itemId,
+        type: widget.type,
+      );
+      if (!mounted) return;
+      if (alreadyPending) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You already have a pending verification request for this item'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
       await _verificationService.createVerificationRequest(
         user: widget.user,
         schoolId: widget.schoolId,

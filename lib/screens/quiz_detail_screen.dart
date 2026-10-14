@@ -513,6 +513,9 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
           _remainingSeconds--;
         });
       } else {
+        // Let an in-flight answer submission finish first (it navigates itself
+        // on the last question); retry on the next tick otherwise.
+        if (_isSubmitting) return;
         _countdownTimer?.cancel();
         _onTimeExpired();
       }
@@ -521,6 +524,7 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
 
   void _onTimeExpired() async {
     if (!mounted) return;
+    setState(() => _isSubmitting = true); // block further manual submissions
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -619,7 +623,7 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
             ),
           );
         }
-      } else {
+      } else if (mounted) {
         setState(() {
           _currentQuestionIndex++;
           _selectedAnswer = null;
@@ -946,45 +950,11 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   }
 
   Future<void> _awardPoints() async {
+    // Karma Coins for a completed attempt are already awarded (improvement-only)
+    // by QuizService.submitAnswerToAttempt; awarding again here double-credited
+    // every quiz completion.
     if (_pointsAwarded) return;
-
-    try {
-      String targetUserId = widget.attempt.userId;
-      if (targetUserId.isEmpty) {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          targetUserId = user.uid;
-        } else {
-          final local = await UserService().getLocalUser();
-          if (local == null) return; // No user available — skip awarding points
-          targetUserId = local.id;
-        }
-      }
-
-      final userService = UserService();
-      final score = widget.attempt.finalScore;
-      int pointsToAward = 0;
-
-      if (score >= 90) {
-        pointsToAward = widget.quiz.points;
-      } else if (score >= 70) {
-        pointsToAward = (widget.quiz.points * 0.8).round();
-      } else if (score >= 50) {
-        pointsToAward = (widget.quiz.points * 0.5).round();
-      }
-
-      if (pointsToAward > 0) {
-        await userService.addUserPoints(targetUserId, pointsToAward);
-        await userService.addUserAction(targetUserId);
-        if (mounted) {
-          setState(() {
-            _pointsAwarded = true;
-          });
-        }
-      }
-    } catch (e) {
-      print('Error awarding points: $e');
-    }
+    _pointsAwarded = true;
   }
 
   @override
@@ -1066,7 +1036,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                     ),
                     child: Text(
                       isPassed
-                          ? '+$score Karma Coins Credited!'
+                          ? 'Karma Coins credited for your best score!'
                           : 'Scored below 50% threshold. Retake to earn full coins.',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,

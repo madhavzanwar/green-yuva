@@ -14,6 +14,7 @@ class _ResilienceTabState extends State<ResilienceTab> {
   List<DisasterEvent> _disasterEvents = [];
   bool _isLoading = true;
   String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -21,7 +22,14 @@ class _ResilienceTabState extends State<ResilienceTab> {
     _loadDisasterEvents();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadDisasterEvents() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
@@ -190,6 +198,7 @@ class _ResilienceTabState extends State<ResilienceTab> {
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
+              controller: _searchController,
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
@@ -213,7 +222,10 @@ class _ResilienceTabState extends State<ResilienceTab> {
           ),
           if (_searchQuery.isNotEmpty)
             GestureDetector(
-              onTap: () => setState(() => _searchQuery = ''),
+              onTap: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
               child: const Icon(Icons.close_rounded, color: AppColors.solidBlack, size: 18),
             )
           else
@@ -287,6 +299,7 @@ class _ResilienceTabState extends State<ResilienceTab> {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () {
+                  _searchController.clear();
                   setState(() {
                     _searchQuery = '';
                   });
@@ -507,7 +520,20 @@ class _ResilienceTabState extends State<ResilienceTab> {
               ),
               const SizedBox(width: 8),
               InkWell(
-                onTap: () => NewsService.launchSourceUrl(event.sourceUrl),
+                onTap: () async {
+                  try {
+                    await NewsService.launchSourceUrl(event.sourceUrl);
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Unable to open bulletin: $e'),
+                          backgroundColor: AppColors.dustyCoral,
+                        ),
+                      );
+                    }
+                  }
+                },
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

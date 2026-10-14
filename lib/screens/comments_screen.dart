@@ -30,7 +30,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
   List<Comment> _comments = [];
   bool _isLoading = true;
   bool _isSubmitting = false;
-  bool _commentAdded = false;
+  int _addedCount = 0;
 
   @override
   void initState() {
@@ -63,7 +63,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   Future<void> _addComment() async {
     final commentText = _commentController.text.trim();
-    if (commentText.isEmpty) return;
+    if (commentText.isEmpty || _isSubmitting) return;
 
     setState(() => _isSubmitting = true);
 
@@ -77,10 +77,11 @@ class _CommentsScreenState extends State<CommentsScreen> {
       );
 
       await _postService.addComment(widget.schoolId, widget.post.id, comment);
+      _addedCount++;
+      if (!mounted) return;
       _commentController.clear();
 
       await _loadComments();
-      _commentAdded = true;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -120,7 +121,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) Navigator.pop(context, _addedCount);
+      },
+      child: Scaffold(
       backgroundColor: AppColors.paperCream,
       appBar: AppBar(
         backgroundColor: AppColors.paperCream,
@@ -129,7 +135,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
           padding: const EdgeInsets.only(left: 12),
           child: Center(
             child: NeoBackButton(
-              onPressed: () => Navigator.pop(context, _commentAdded),
+              onPressed: () => Navigator.pop(context, _addedCount),
             ),
           ),
         ),
@@ -316,6 +322,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
                           border: InputBorder.none,
                         ),
                         maxLines: null,
+                        maxLength: 500,
+                        buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _addComment(),
                       ),
@@ -355,6 +363,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

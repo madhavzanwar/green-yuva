@@ -17,6 +17,7 @@ class _CreateSwapItemScreenState extends State<CreateSwapItemScreen> {
   final _descController = TextEditingController();
   final _prefController = TextEditingController();
 
+  bool _submitted = false;
   SwapCategory _selectedCategory = SwapCategory.textbooks;
   ItemCondition _selectedCondition = ItemCondition.good;
   SwapType _selectedSwapType = SwapType.freeGiveaway;
@@ -496,6 +497,9 @@ class _CreateSwapItemScreenState extends State<CreateSwapItemScreen> {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: InputBorder.none,
                     ),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Please enter what you would like in return'
+                        : null,
                   ),
                 ),
               ],
@@ -606,7 +610,9 @@ class _CreateSwapItemScreenState extends State<CreateSwapItemScreen> {
                 textColor: AppColors.solidBlack,
                 height: 54,
                 onPressed: () {
+                  if (_submitted) return;
                   if (_formKey.currentState?.validate() ?? false) {
+                    _submitted = true;
                     YuvaSwapService().addItem(
                       title: _titleController.text.trim(),
                       description: _descController.text.trim(),

@@ -22,6 +22,7 @@ class _KarmaCanteenScreenState extends State<KarmaCanteenScreen> {
   List<RedeemedVoucher> _vouchers = [];
   String _selectedCategory = 'All';
   bool _isLoading = true;
+  bool _isRedeeming = false;
 
   final List<String> _categories = [
     'All',
@@ -39,8 +40,14 @@ class _KarmaCanteenScreenState extends State<KarmaCanteenScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final user = await _userService.getLocalUser();
-    final vouchers = await _rewardService.getRedeemedVouchers();
+    AppUser? user = _user;
+    List<RedeemedVoucher> vouchers = _vouchers;
+    try {
+      user = await _userService.getLocalUser();
+      vouchers = await _rewardService.getRedeemedVouchers();
+    } catch (e) {
+      debugPrint('Karma canteen load failed: $e');
+    }
     if (mounted) {
       setState(() {
         _user = user;
@@ -60,7 +67,7 @@ class _KarmaCanteenScreenState extends State<KarmaCanteenScreen> {
   }
 
   Future<void> _handleRedeem(RewardItem perk) async {
-    if (_user == null) return;
+    if (_user == null || _isRedeeming) return;
     if (_user!.points < perk.karmaCost) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -150,13 +157,18 @@ class _KarmaCanteenScreenState extends State<KarmaCanteenScreen> {
       ),
     );
 
-    if (confirmed == true) {
-      final voucher = await _rewardService.redeemReward(_user!, perk);
-      if (voucher != null) {
-        await _loadData();
-        if (mounted) {
-          _showVoucherClaimedDialog(voucher);
+    if (confirmed == true && mounted && _user != null && !_isRedeeming) {
+      _isRedeeming = true; // prevent double-spend from rapid repeated taps
+      try {
+        final voucher = await _rewardService.redeemReward(_user!, perk);
+        if (voucher != null) {
+          await _loadData();
+          if (mounted) {
+            _showVoucherClaimedDialog(voucher);
+          }
         }
+      } finally {
+        _isRedeeming = false;
       }
     }
   }
