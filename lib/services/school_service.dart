@@ -120,16 +120,18 @@ class SchoolService {
           );
         }
 
-        String schoolName = '';
-        for (String fieldName in data.keys) {
-          if (fieldName != 'imageUrl' && fieldName != 'createdAt' && fieldName != 'updatedAt' && fieldName != 'name') {
-            schoolName = fieldName.replaceAll(':', '').trim();
-            break;
+        String schoolName = data['name']?.toString().trim() ?? '';
+        if (schoolName.isEmpty) {
+          for (String fieldName in data.keys) {
+            if (fieldName != 'imageUrl' && fieldName != 'createdAt' && fieldName != 'updatedAt' && fieldName != 'name' && fieldName != 'memberCount') {
+              schoolName = fieldName.replaceAll(':', '').trim();
+              break;
+            }
           }
         }
 
         if (schoolName.isEmpty) {
-          schoolName = data['name'] ?? doc.id;
+          schoolName = doc.id;
         }
 
         final usersSnapshot = await usersCollection

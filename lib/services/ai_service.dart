@@ -103,7 +103,7 @@ class AIService {
     try {
       final headers = Map<String, String>.from(config['headers']);
       if (endpointName == 'gemini') {
-        final apiKey = EnvConfig.geminiApiKey;
+        final apiKey = effectiveGeminiApiKey;
         if (apiKey.isEmpty || apiKey == 'your_gemini_api_key_here') {
           return null;
         }
@@ -112,7 +112,7 @@ class AIService {
           Uri.parse(url),
           headers: headers,
           body: jsonEncode(_buildRequestBody(endpointName, prompt, config)),
-        );
+        ).timeout(const Duration(seconds: 20));
         return _handleResponse(response, endpointName, config);
       } else {
         if (config['url'] == 'local') return null;
@@ -120,7 +120,7 @@ class AIService {
           Uri.parse(config['url']),
           headers: headers,
           body: jsonEncode(_buildRequestBody(endpointName, prompt, config)),
-        );
+        ).timeout(const Duration(seconds: 20));
         return _handleResponse(response, endpointName, config);
       }
     } catch (e) {
@@ -209,7 +209,12 @@ class AIService {
 
   static String _buildIntelligentPrompt(String message, String? conversationId) {
     final context = conversationId != null ? _conversationContexts[conversationId] : null;
-    final recentMessages = context?.take(4).map((m) => '${m['role'] == 'user' ? 'Student' : 'YuvaSathi'}: ${m['content']}').join('\n') ?? '';
+    // The current user message is already appended to the context; exclude it
+    // and use the most recent 4 prior messages (take(4) returned the oldest).
+    final prior = (context != null && context.length > 1)
+        ? context.sublist(0, context.length - 1)
+        : <Map<String, dynamic>>[];
+    final recentMessages = prior.skip(prior.length > 4 ? prior.length - 4 : 0).map((m) => '${m['role'] == 'user' ? 'Student' : 'YuvaSathi'}: ${m['content']}').join('\n');
 
     return '''
 Recent conversation history:
@@ -315,7 +320,7 @@ Please provide a direct, helpful, and factually rich response. Explain key point
     required int points,
   }) async {
     final base64Image = base64Encode(imageBytes);
-    final url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey';
+    final url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey';
 
     final promptText = '''
 You are "Green Yuva AI Green Lens", an expert environmental MRV (Measurement, Reporting, and Verification) auditor for college campus sustainability in India.
@@ -364,7 +369,7 @@ Respond STRICTLY with a raw JSON object matching this schema without markdown fe
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(requestBody),
-    ).timeout(const Duration(seconds: 4));
+    ).timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);

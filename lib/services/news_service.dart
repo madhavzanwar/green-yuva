@@ -89,15 +89,17 @@ class NewsService {
     try {
       final List<DisasterEvent> events = [];
 
+      if (_newsApiKey.isEmpty) return events;
+
       final focusedQuery = 'climate disaster OR natural disaster OR hurricane OR earthquake OR flood OR wildfire OR extreme weather';
 
       final response = await http.get(
         Uri.parse('$_newsApiBaseUrl/everything?q=$focusedQuery&sortBy=publishedAt&language=en&pageSize=20&sources=bbc-news,cnn,reuters,associated-press,the-guardian-uk,abc-news&apiKey=$_newsApiKey'),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final articles = data['articles'] as List;
+        final articles = (data['articles'] as List?) ?? const [];
 
         for (var article in articles) {
           final event = _parseNewsAPIArticle(article);
@@ -121,14 +123,15 @@ class NewsService {
   static Future<List<DisasterEvent>> _fetchFromGNews() async {
     try {
       final List<DisasterEvent> events = [];
+      if (_gNewsApiKey.isEmpty) return events;
 
       final response = await http.get(
         Uri.parse('$_gNewsBaseUrl/search?q=climate+change+disaster+weather&lang=en&country=us&max=20&apikey=$_gNewsApiKey'),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final articles = data['articles'] as List;
+        final articles = (data['articles'] as List?) ?? const [];
 
         for (var article in articles) {
           final event = _parseGNewsArticle(article);

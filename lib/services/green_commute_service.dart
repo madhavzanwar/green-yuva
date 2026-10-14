@@ -64,8 +64,8 @@ class GreenCommuteService extends ChangeNotifier {
         final yesterday = DateTime.now().subtract(const Duration(days: 1));
         if (savedDateStr == _formatDate(yesterday) && savedSteps >= 1500) {
           currentStreak += 1;
-        } else if (savedDateStr != _formatDate(yesterday)) {
-          // Missed more than a day
+        } else {
+          // Missed more than a day, or yesterday's goal was not reached
           currentStreak = 1;
         }
 

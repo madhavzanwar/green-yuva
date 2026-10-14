@@ -124,7 +124,9 @@ class UserService {
     // Immediately persist to local user state so points are never lost offline
     try {
       final local = await getLocalUser();
-      if (local != null) {
+      // Only touch the cached local user when it is the user being credited
+      // (admins approving another user's request must not receive the points).
+      if (local != null && local.id == userId) {
         final updatedLocal = local.copyWith(
           points: (local.points + pointsToAdd).clamp(0, 9999999),
           // Do not penalize weekly action target when spending Karma Coins on perks
@@ -384,7 +386,7 @@ class UserService {
   Future<void> addUserAction(String userId) async {
     try {
       final local = await getLocalUser();
-      if (local != null) {
+      if (local != null && local.id == userId) {
         final updatedLocal = local.copyWith(actions: local.actions + 1);
         await saveCurrentLocalUser(updatedLocal);
       }

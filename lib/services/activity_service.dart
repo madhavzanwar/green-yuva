@@ -1470,14 +1470,29 @@ Check out the event gallery and your GreenKarma badge rewards in the Green Yuva 
       }
 
       final activityData = activityDoc.data() as Map<String, dynamic>;
-      final points = activityData['points'] ?? 0;
+      final points = (activityData['points'] as num?)?.toInt() ?? 0;
 
       print('💰 ActivityService: Activity offers $points points');
 
-      await getActivitiesCollection(schoolId).doc(activityId).update({
-        'participants': FieldValue.arrayUnion([userId]),
-        'participantCount': FieldValue.increment(1),
+      // Atomically add the participant only if not already joined, so points
+      // and the participant counter are never awarded twice.
+      final activityRef = getActivitiesCollection(schoolId).doc(activityId);
+      final newlyJoined = await FirebaseFirestore.instance.runTransaction<bool>((tx) async {
+        final snap = await tx.get(activityRef);
+        final data = (snap.data() as Map<String, dynamic>?) ?? {};
+        final participants = List<String>.from(data['participants'] ?? []);
+        if (participants.contains(userId)) return false;
+        tx.update(activityRef, {
+          'participants': FieldValue.arrayUnion([userId]),
+          'participantCount': FieldValue.increment(1),
+        });
+        return true;
       });
+
+      if (!newlyJoined) {
+        print('ℹ️ ActivityService: User $userId already joined $activityId, no points awarded');
+        return;
+      }
 
       await _userService.addUserPoints(userId, points);
       await _userService.addUserAction(userId);
@@ -1499,12 +1514,25 @@ Check out the event gallery and your GreenKarma badge rewards in the Green Yuva 
       }
 
       final activityData = activityDoc.data() as Map<String, dynamic>;
-      final points = activityData['points'] ?? 0;
+      final points = (activityData['points'] as num?)?.toInt() ?? 0;
 
-      await getActivitiesCollection(schoolId).doc(activityId).update({
-        'participants': FieldValue.arrayRemove([userId]),
-        'participantCount': FieldValue.increment(-1),
+      final activityRef = getActivitiesCollection(schoolId).doc(activityId);
+      final wasJoined = await FirebaseFirestore.instance.runTransaction<bool>((tx) async {
+        final snap = await tx.get(activityRef);
+        final data = (snap.data() as Map<String, dynamic>?) ?? {};
+        final participants = List<String>.from(data['participants'] ?? []);
+        if (!participants.contains(userId)) return false;
+        tx.update(activityRef, {
+          'participants': FieldValue.arrayRemove([userId]),
+          'participantCount': FieldValue.increment(-1),
+        });
+        return true;
       });
+
+      if (!wasJoined) {
+        print('ℹ️ ActivityService: User $userId was not in $activityId, no points deducted');
+        return;
+      }
 
       await _userService.addUserPoints(userId, -points);
 
