@@ -8,8 +8,21 @@ class EnvConfig {
         return dotenvValue;
       }
     } catch (_) {}
-    return '';
+    // Fallback for builds that don't bundle a .env file:
+    //   flutter build apk --dart-define=GEMINI_API_KEY=... (one per key)
+    return _compileTimeEnv[key] ?? '';
   }
+
+  static const Map<String, String> _compileTimeEnv = {
+    'SUPABASE_URL': String.fromEnvironment('SUPABASE_URL'),
+    'SUPABASE_ANON_KEY': String.fromEnvironment('SUPABASE_ANON_KEY'),
+    'NEWS_API_KEY': String.fromEnvironment('NEWS_API_KEY'),
+    'GNEWS_API_KEY': String.fromEnvironment('GNEWS_API_KEY'),
+    'GOOGLE_MAPS_API_KEY': String.fromEnvironment('GOOGLE_MAPS_API_KEY'),
+    'GEMINI_API_KEY': String.fromEnvironment('GEMINI_API_KEY'),
+    'FIREBASE_WEB_API_KEY': String.fromEnvironment('FIREBASE_WEB_API_KEY'),
+    'FIREBASE_ANDROID_API_KEY': String.fromEnvironment('FIREBASE_ANDROID_API_KEY'),
+  };
 
   static String get supabaseUrl => _getEnvVar('SUPABASE_URL');
   static String get supabaseAnonKey => _getEnvVar('SUPABASE_ANON_KEY');

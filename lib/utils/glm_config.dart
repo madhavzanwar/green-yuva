@@ -4,8 +4,8 @@ class GLMConfig {
   static Map<String, Map<String, dynamic>> get endpoints {
     return {
       'gemini': {
-        'url': 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
-        'model': 'gemini-1.5-flash',
+        'url': 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+        'model': 'gemini-2.5-flash',
         'headers': {
           'Content-Type': 'application/json',
         },
