@@ -29,6 +29,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
+  bool _isAdmin = false;
   String _selectedLanguage = 'English(US)';
   final NotificationService _notificationService = NotificationService();
   final LanguageService _languageService = LanguageService();
@@ -37,6 +38,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+    _loadAdminRole();
+  }
+
+  Future<void> _loadAdminRole() async {
+    final isAdmin = await UserService().isAdmin(widget.user.id);
+    if (!mounted || isAdmin == _isAdmin) return;
+    setState(() => _isAdmin = isAdmin);
   }
 
   Future<void> _loadSettings() async {
@@ -189,21 +197,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         );
                       },
                     ),
+                    if (_isAdmin) ...[
                     const Divider(height: 1, thickness: 1.5, color: AppColors.solidBlack),
-                    _buildSettingItem(
-                      icon: Icons.admin_panel_settings_rounded,
-                      iconBg: AppColors.dustyCoral,
-                      title: 'Admin Access',
-                      subtitle: 'Review student action proofs (Admins only)',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AdminAccessScreen(user: widget.user),
-                          ),
-                        );
-                      },
-                    ),
+                      _buildSettingItem(
+                        icon: Icons.admin_panel_settings_rounded,
+                        iconBg: AppColors.dustyCoral,
+                        title: 'Admin Access',
+                        subtitle: 'Review student action proofs (Admins only)',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AdminAccessScreen(user: widget.user),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ],
                 ),
               ),

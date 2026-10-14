@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 
@@ -420,6 +421,28 @@ class UserService {
 
   Future<void> updateUserProfilePic(String userId, String profilePicUrl) async {
     await usersCollection.doc(userId).update({'profilePic': profilePicUrl});
+  }
+
+  /// Whether the signed-in user holds the admin role. The role lives in the
+  /// write-protected `admins/{uid}` collection (or an `admin` auth claim) and is
+  /// enforced again by firestore.rules; this check only drives the UI. Fails
+  /// closed on any error.
+  Future<bool> isAdmin(String userId) async {
+    try {
+      final authUser = FirebaseAuth.instance.currentUser;
+      if (authUser == null || authUser.uid != userId) return false;
+      final token = await authUser.getIdTokenResult();
+      if (token.claims?['admin'] == true) return true;
+      final doc = await FirebaseFirestore.instance
+          .collection('admins')
+          .doc(userId)
+          .get()
+          .timeout(const Duration(seconds: 4));
+      return doc.exists;
+    } catch (e) {
+      print('ℹ️ UserService isAdmin check failed (treated as non-admin): $e');
+      return false;
+    }
   }
 
   Future<void> ensureDummyUsersExist() async {

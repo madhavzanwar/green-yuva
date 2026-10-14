@@ -87,17 +87,6 @@ class PostService {
     try {
       print('📝 PostService: Adding post to school $schoolId');
 
-      final schoolDoc = FirebaseFirestore.instance.collection('schools').doc(schoolId);
-      final schoolSnapshot = await schoolDoc.get();
-
-      if (!schoolSnapshot.exists) {
-        print('⚠️ PostService: School document does not exist, creating it...');
-        await schoolDoc.set({
-          'name': 'School $schoolId',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-
       await getPostsCollection(schoolId).doc(post.id).set(post.toMap());
       print('✅ PostService: Post added successfully');
     } catch (e) {
