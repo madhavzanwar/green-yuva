@@ -125,7 +125,7 @@ class AIConversation {
       createdAt: AIMessage._parseDate(json['createdAt']),
       lastMessageAt: json['lastMessageAt'] != null ? AIMessage._parseDate(json['lastMessageAt']) : null,
       messages: (json['messages'] as List<dynamic>?)
-          ?.map((m) => AIMessage.fromJson(m as Map<String, dynamic>))
+          ?.map((m) => AIMessage.fromJson(Map<String, dynamic>.from(m as Map)))
           .toList() ?? [],
       settings: json['settings'] != null
           ? Map<String, dynamic>.from(json['settings'])
