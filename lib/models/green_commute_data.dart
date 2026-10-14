@@ -29,7 +29,7 @@ class GreenCommuteData {
   double get co2SavedGrams => co2SavedKg * 1000.0;
 
   /// Tailpipe petrol fuel avoided (assuming 35 km/L on short cold-start campus trips)
-  double get petrolSavedLiters => distanceKm * 0.035;
+  double get petrolSavedLiters => distanceKm / 35;
 
   /// Typical campus micro-trips (hostels <-> departments <-> canteens are ~800m)
   double get microTripsReplaced => distanceKm / 0.8;

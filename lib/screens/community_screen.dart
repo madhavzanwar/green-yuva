@@ -537,6 +537,7 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
                       user: widget.user,
                     )),
                   );
+                  if (!mounted) return;
                   if (result == true) {
                     _loadData();
                   }
@@ -703,7 +704,7 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
                            }
 
                          } catch (e) {
-
+                           if (!mounted) return;
                            if (postIndex != -1) {
                              setState(() {
                                if (liked) {
@@ -713,7 +714,7 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
                                }
                              });
                            }
-                           ScaffoldMessenger.of(context).showSnackBar(
+                           ScaffoldMessenger.of(this.context).showSnackBar(
                              SnackBar(content: Text('Failed to ${liked ? 'unlike' : 'like'} post'), backgroundColor: Colors.red),
                            );
                          }
@@ -739,7 +740,7 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
                            }
 
                          } catch (e) {
-
+                           if (!mounted) return;
                            if (postIndex != -1) {
                              setState(() {
                                if (saved) {
@@ -749,7 +750,7 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
                                }
                              });
                            }
-                           ScaffoldMessenger.of(context).showSnackBar(
+                           ScaffoldMessenger.of(this.context).showSnackBar(
                              SnackBar(content: Text('Failed to ${saved ? 'unsave' : 'save'} post'), backgroundColor: Colors.red),
                            );
                          }
@@ -766,8 +767,9 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
                            ),
                          );
 
-                         if (result == true) {
-                           _updateCommentCount(post.id, post.commentCount + 1);
+                         if (!mounted) return;
+                         if (result is int && result > 0) {
+                           _updateCommentCount(post.id, post.commentCount + result);
                          }
                        },
                        onDelete: () async {
@@ -781,20 +783,21 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
 
                          try {
                            await _postService.deletePost(widget.schoolId, post.id);
+                           if (!mounted) return;
 
-                           ScaffoldMessenger.of(context).showSnackBar(
+                           ScaffoldMessenger.of(this.context).showSnackBar(
                              SnackBar(
                                content: Text('Post deleted successfully'),
                                backgroundColor: Colors.green,
                              ),
                            );
                          } catch (e) {
-
+                           if (!mounted) return;
                            if (postIndex != -1) {
 
                              _loadData();
                            }
-                           ScaffoldMessenger.of(context).showSnackBar(
+                           ScaffoldMessenger.of(this.context).showSnackBar(
                              SnackBar(
                                content: Text('Failed to delete post'),
                                backgroundColor: Colors.red,
@@ -868,6 +871,7 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
                         _activityService.createSchoolSpecificActivities(widget.schoolId),
                       ]);
                       print('✅ Debug: Sample data created successfully');
+                      if (!mounted) return;
                       _loadData();
                     } catch (e) {
                       print('❌ Debug: Error creating sample data: $e');

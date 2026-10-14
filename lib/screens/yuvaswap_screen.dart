@@ -135,7 +135,9 @@ class _YuvaSwapScreenState extends State<YuvaSwapScreen>
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const CreateSwapItemScreen()),
-            ).then((_) => setState(() {}));
+            ).then((_) {
+              if (mounted) setState(() {});
+            });
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -445,7 +447,9 @@ class _YuvaSwapScreenState extends State<YuvaSwapScreen>
           MaterialPageRoute(
             builder: (_) => SwapItemDetailScreen(item: item),
           ),
-        ).then((_) => setState(() {}));
+        ).then((_) {
+              if (mounted) setState(() {});
+            });
       },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/user.dart';
+import '../services/user_service.dart';
 import 'admin_verification_screen.dart';
 
 class AdminAccessScreen extends StatefulWidget {
@@ -18,6 +19,23 @@ class AdminAccessScreen extends StatefulWidget {
 class _AdminAccessScreenState extends State<AdminAccessScreen> {
   final TextEditingController _schoolIdController = TextEditingController();
   bool _isLoading = false;
+  bool _checkingRole = true;
+  bool _isAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _verifyAdminRole();
+  }
+
+  Future<void> _verifyAdminRole() async {
+    final isAdmin = await UserService().isAdmin(widget.user.id);
+    if (!mounted) return;
+    setState(() {
+      _isAdmin = isAdmin;
+      _checkingRole = false;
+    });
+  }
 
   @override
   void dispose() {
@@ -26,6 +44,7 @@ class _AdminAccessScreenState extends State<AdminAccessScreen> {
   }
 
   void _accessAdminPanel() {
+    if (!_isAdmin) return;
     if (_schoolIdController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -58,7 +77,20 @@ class _AdminAccessScreenState extends State<AdminAccessScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: _checkingRole
+          ? const Center(child: CircularProgressIndicator())
+          : !_isAdmin
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Your account does not have admin access.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.questrial(fontSize: 18, color: Colors.grey[700]),
+                    ),
+                  ),
+                )
+              : SingleChildScrollView(
         child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(

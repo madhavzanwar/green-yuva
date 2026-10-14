@@ -98,6 +98,13 @@ class _EmailAuthFormState extends State<EmailAuthForm> {
         _lastName = 'User';
       }
 
+      // The full-name field is hidden in login mode; do not rename existing users
+      // with its stale default text.
+      if (_isLogin) {
+        _firstName = '';
+        _lastName = '';
+      }
+
       final cleanEmail = _email.toLowerCase();
       final cleanPass = _password;
       final isDemoAccount = cleanEmail == 'test@gmail.com' ||
@@ -124,8 +131,9 @@ class _EmailAuthFormState extends State<EmailAuthForm> {
         final local = await userService.getLocalUser(createIfNull: true);
         final demoUser = AppUser(
           id: local?.id ?? 'demo_${DateTime.now().millisecondsSinceEpoch}',
-          firstName: _firstName.isNotEmpty ? _firstName : 'Demo',
-          lastName: _lastName.isNotEmpty ? _lastName : 'Hero',
+          firstName: _firstName.isNotEmpty ? _firstName : (local != null && local.firstName.isNotEmpty ? local.firstName : 'Demo'),
+          lastName: _lastName.isNotEmpty ? _lastName : (local != null && local.lastName.isNotEmpty ? local.lastName : 'Hero'),
+          joinedSchoolId: local?.joinedSchoolId,
           points: (local != null && local.points > 0) ? local.points : 350,
           savedPosts: local?.savedPosts ?? [],
           likedPosts: local?.likedPosts ?? [],
@@ -188,6 +196,8 @@ class _EmailAuthFormState extends State<EmailAuthForm> {
           if (firebaseUser != null) {
             try {
               appUser = await userService.getUserById(firebaseUser.uid);
+              // getUserById falls back to a cached local user of a different account
+              if (appUser != null && appUser.id != firebaseUser.uid) appUser = null;
             } catch (_) {}
           }
           if (appUser == null) {
@@ -196,7 +206,8 @@ class _EmailAuthFormState extends State<EmailAuthForm> {
               id: firebaseUser?.uid ?? local!.id,
               firstName: _firstName.isNotEmpty ? _firstName : (local!.firstName.isNotEmpty ? local.firstName : (_email.split('@').first)),
               lastName: _lastName.isNotEmpty ? _lastName : local!.lastName,
-              points: local!.points,
+              joinedSchoolId: local!.joinedSchoolId,
+              points: local.points,
               savedPosts: local.savedPosts,
               likedPosts: local.likedPosts,
               profilePic: local.profilePic,
@@ -213,8 +224,9 @@ class _EmailAuthFormState extends State<EmailAuthForm> {
             );
             await userService.saveCurrentLocalUser(appUser);
           }
-          if (mounted) setState(() => _isSubmitting = false);
-          widget.showSuccessDialog('Welcome, ${_firstName.isNotEmpty ? _firstName : 'Climate Champion'}! Your Green Yuva workspace is ready.');
+          if (!mounted) return;
+          setState(() => _isSubmitting = false);
+          widget.showSuccessDialog('Welcome, ${appUser.firstName.isNotEmpty ? appUser.firstName : 'Climate Champion'}! Your Green Yuva workspace is ready.');
         } else {
           String uid = 'user_${DateTime.now().millisecondsSinceEpoch}';
           try {

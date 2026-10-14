@@ -50,14 +50,19 @@ class _GreenCommuteScreenState extends State<GreenCommuteScreen> {
     setState(() => _isClaiming = true);
     HapticFeedback.heavyImpact();
 
-    final claimed = await _commuteService.claimKarmaCoins(_currentUser.id);
-    final updatedUser = await _userService.getUserById(_currentUser.id);
+    int claimed = 0;
+    AppUser? updatedUser;
+    try {
+      claimed = await _commuteService.claimKarmaCoins(_currentUser.id);
+      updatedUser = await _userService.getUserById(_currentUser.id);
+    } catch (_) {}
 
     if (mounted) {
       setState(() {
         _isClaiming = false;
         if (updatedUser != null) _currentUser = updatedUser;
       });
+      if (claimed <= 0) return;
 
       showNeoStickerModal(
         context: context,

@@ -26,6 +26,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
   List<VerificationRequest> _verificationRequests = [];
   bool _isLoading = true;
   String _selectedFilter = 'all';
+  final Set<String> _processingIds = {};
 
   @override
   void initState() {
@@ -77,6 +78,17 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
   }
 
   Future<void> _approveRequest(VerificationRequest request) async {
+    if (!request.isPending || _processingIds.contains(request.id)) return;
+    if (request.userId == widget.adminUser.id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You cannot approve your own verification request'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    _processingIds.add(request.id);
     try {
       await _verificationService.approveVerificationRequest(
         requestId: request.id,
@@ -105,6 +117,8 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
           ),
         );
       }
+    } finally {
+      _processingIds.remove(request.id);
     }
   }
 
@@ -150,7 +164,8 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
       ),
     );
 
-    if (reviewNotes != null) {
+    if (reviewNotes != null && mounted && !_processingIds.contains(request.id)) {
+      _processingIds.add(request.id);
       try {
         await _verificationService.rejectVerificationRequest(
           requestId: request.id,
@@ -177,6 +192,8 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
             ),
           );
         }
+      } finally {
+        _processingIds.remove(request.id);
       }
     }
   }

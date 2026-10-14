@@ -656,11 +656,16 @@ class QuizService {
       if (quiz == null) return;
 
       final newPoints = (attempt.finalScore / 100 * quiz.points).round();
-      final previousBestAttempt = await getUserBestAttempt(attempt.userId, attempt.quizId);
+      // Best of the *other* completed attempts; including the current one would
+      // make it its own baseline and re-award full points on every retake.
+      final allAttempts = await getUserQuizAttempts(attempt.userId, attempt.quizId);
+      final others = allAttempts.where((a) => a.id != attempt.id && a.isCompleted).toList()
+        ..sort((a, b) => b.finalScore.compareTo(a.finalScore));
+      final previousBestAttempt = others.isEmpty ? null : others.first;
 
       int pointsToAward = 0;
 
-      if (previousBestAttempt == null || previousBestAttempt.id == attempt.id) {
+      if (previousBestAttempt == null) {
         pointsToAward = newPoints;
         print('🎯 First attempt or new best - awarding $pointsToAward points');
       } else {
@@ -727,7 +732,7 @@ class QuizService {
           .timeout(const Duration(seconds: 3));
 
       if (doc.exists) {
-        return doc.data()?['maxPointsEarned'] ?? 0;
+        return (doc.data()?['maxPointsEarned'] as num?)?.toInt() ?? 0;
       }
       return 0;
     } catch (e) {

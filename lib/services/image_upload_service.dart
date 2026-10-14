@@ -17,7 +17,7 @@ class ImageUploadService {
       final imageUrl = await SupabaseImageService.uploadImage(
         imageBytes: imageBytes,
         folder: 'profile-pictures',
-        customFileName: '$userId.jpg',
+        customFileName: '${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
 
       return imageUrl;
@@ -63,7 +63,7 @@ class ImageUploadService {
         final imageUrl = await SupabaseImageService.uploadImage(
           imageBytes: imageBytes,
           folder: 'mission-proofs/$missionId',
-          customFileName: '$userId.jpg',
+          customFileName: '${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg',
         ).timeout(const Duration(seconds: 4));
 
         return imageUrl;

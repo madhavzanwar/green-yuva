@@ -35,6 +35,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   }
 
   Future<void> _loadActivities() async {
+    if (!mounted) return;
     try {
       setState(() {
         _isLoading = true;

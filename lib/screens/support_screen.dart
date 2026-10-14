@@ -15,6 +15,12 @@ class _SupportScreenState extends State<SupportScreen> {
   int _selectedAmount = 100;
   final TextEditingController _customAmountController = TextEditingController();
 
+  @override
+  void dispose() {
+    _customAmountController.dispose();
+    super.dispose();
+  }
+
   void _launchUpiPayment(int amount) async {
     final upiUrl = 'upi://pay?pa=8080956037-2@ybl&pn=Green%20Yuva%20Foundation&am=$amount&cu=INR&tn=Support%20Climate%20Action';
     try {
@@ -22,9 +28,11 @@ class _SupportScreenState extends State<SupportScreen> {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
+        if (!mounted) return;
         _showPaymentModal(amount);
       }
     } catch (_) {
+      if (!mounted) return;
       _showPaymentModal(amount);
     }
   }

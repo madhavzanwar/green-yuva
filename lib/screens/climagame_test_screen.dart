@@ -104,7 +104,7 @@ class _ClimaGameTestScreenState extends State<ClimaGameTestScreen> {
     } catch (e) {
       _showSnackBar('❌ Error creating ecores: $e', Colors.red);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -117,7 +117,7 @@ class _ClimaGameTestScreenState extends State<ClimaGameTestScreen> {
     } catch (e) {
       _showSnackBar('❌ Error clearing ecores: $e', Colors.red);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -130,11 +130,12 @@ class _ClimaGameTestScreenState extends State<ClimaGameTestScreen> {
     } catch (e) {
       _showSnackBar('❌ Error listing ecores: $e', Colors.red);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),

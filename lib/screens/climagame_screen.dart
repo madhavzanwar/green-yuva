@@ -206,6 +206,7 @@ class _ClimaGameScreenState extends State<ClimaGameScreen> with SingleTickerProv
         ecore: ecore,
         user: widget.user,
         onMissionCompleted: () {
+          if (!mounted) return;
           _loadData();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

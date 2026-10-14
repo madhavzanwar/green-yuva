@@ -121,7 +121,8 @@ class MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         });
         _animationController.forward();
 
-        if (index == 1) {
+        // Refresh so points/streak shown on Home, YuvaVibe and Leaderboard are current
+        if (index == 0 || index == 1 || index == 2) {
           _loadUser();
         }
       });

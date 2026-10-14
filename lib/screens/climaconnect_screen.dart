@@ -87,11 +87,13 @@ class _ClimaConnectScreenState extends State<ClimaConnectScreen>
   Future<void> _joinSchool(String schoolId) async {
     try {
       await _userService.joinSchool(widget.user.id, schoolId);
+      if (!mounted) return;
       setState(() {
         _joinedSchoolId = schoolId;
       });
 
-      final school = _schools.firstWhere((s) => s.id == schoolId, orElse: () => _schools.first);
+      final matches = _schools.where((s) => s.id == schoolId);
+      final schoolName = matches.isNotEmpty ? matches.first.name : 'school';
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -102,7 +104,7 @@ class _ClimaConnectScreenState extends State<ClimaConnectScreen>
               side: const BorderSide(color: AppColors.butterYellow, width: 2.0),
             ),
             content: Text(
-              'Joined ${school.name}!',
+              'Joined $schoolName!',
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w700,
                 color: Colors.white,

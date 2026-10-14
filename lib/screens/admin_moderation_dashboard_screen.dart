@@ -30,6 +30,7 @@ class _AdminModerationDashboardScreenState extends State<AdminModerationDashboar
   List<VerificationRequest> _allRequests = [];
   bool _isLoading = true;
   bool _isBatchProcessing = false;
+  final Set<String> _processingIds = {};
 
   @override
   void initState() {
@@ -45,6 +46,7 @@ class _AdminModerationDashboardScreenState extends State<AdminModerationDashboar
   }
 
   Future<void> _loadRequests() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       var requests = await _verificationService.getSchoolVerificationRequests(widget.schoolId);
@@ -67,6 +69,17 @@ class _AdminModerationDashboardScreenState extends State<AdminModerationDashboar
   }
 
   Future<void> _approveRequest(VerificationRequest request, int pointsToAward) async {
+    if (!request.isPending || _processingIds.contains(request.id)) return;
+    if (request.userId == widget.adminUser.id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.redAccent,
+          content: Text('You cannot approve your own verification request.'),
+        ),
+      );
+      return;
+    }
+    _processingIds.add(request.id);
     try {
       await _verificationService.approveVerificationRequest(
         requestId: request.id,
@@ -96,10 +109,14 @@ class _AdminModerationDashboardScreenState extends State<AdminModerationDashboar
           SnackBar(backgroundColor: Colors.redAccent, content: Text('Error approving request: $e')),
         );
       }
+    } finally {
+      _processingIds.remove(request.id);
     }
   }
 
   Future<void> _rejectRequest(VerificationRequest request, String reason) async {
+    if (!request.isPending || _processingIds.contains(request.id)) return;
+    _processingIds.add(request.id);
     try {
       await _verificationService.rejectVerificationRequest(
         requestId: request.id,
@@ -123,11 +140,20 @@ class _AdminModerationDashboardScreenState extends State<AdminModerationDashboar
           SnackBar(backgroundColor: Colors.redAccent, content: Text('Error rejecting request: $e')),
         );
       }
+    } finally {
+      _processingIds.remove(request.id);
     }
   }
 
   Future<void> _batchFastTrackAiApproved(List<VerificationRequest> pending) async {
-    final aiEligible = pending.where((r) => (r.aiConfidence ?? 0) >= 0.80).toList();
+    if (_isBatchProcessing) return;
+    final aiEligible = pending
+        .where((r) =>
+            (r.aiConfidence ?? 0) >= 0.80 &&
+            r.aiIsAuthentic != false &&
+            r.userId != widget.adminUser.id &&
+            !_processingIds.contains(r.id))
+        .toList();
     if (aiEligible.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

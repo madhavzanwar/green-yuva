@@ -127,6 +127,7 @@ class _SwapItemDetailScreenState extends State<SwapItemDetailScreen> {
                     note,
                   );
                   Navigator.pop(ctx);
+                  if (!mounted) return;
                   setState(() {});
                   _showExchangeCoordinatorDialog(context, note);
                 },
@@ -291,7 +292,8 @@ class _SwapItemDetailScreenState extends State<SwapItemDetailScreen> {
                 onPressed: () async {
                   final waUrl = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(messageText)}');
                   try {
-                    await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+                    final launched = await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+                    if (!launched) throw Exception('Could not launch WhatsApp');
                   } catch (e) {
                     Clipboard.setData(ClipboardData(text: messageText));
                     if (ctx.mounted) {
@@ -786,10 +788,16 @@ class _SwapItemDetailScreenState extends State<SwapItemDetailScreen> {
                   color: AppColors.solidBlack,
                   size: 20,
                 ),
-                color: item.status == 'requested' ? Colors.grey[300]! : AppColors.butterYellow,
+                color: (item.status == 'requested' ||
+                        item.status == 'completed' ||
+                        item.donorId == 'current_user')
+                    ? Colors.grey[300]!
+                    : AppColors.butterYellow,
                 textColor: AppColors.solidBlack,
                 height: 54,
-                onPressed: item.status == 'requested'
+                onPressed: item.status == 'requested' ||
+                        item.status == 'completed' ||
+                        item.donorId == 'current_user'
                     ? null
                     : () => _showRequestDialog(context),
               ),

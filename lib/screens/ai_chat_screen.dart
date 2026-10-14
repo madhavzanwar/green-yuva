@@ -282,11 +282,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   void _sendMessage(String text) {
-    if (text.trim().isEmpty) return;
+    if (text.trim().isEmpty || _isLoading) return;
 
     final userMessage = AIMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: text,
+      content: text.trim(),
       type: MessageType.user,
       timestamp: DateTime.now(),
       status: MessageStatus.sent,

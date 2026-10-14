@@ -19,6 +19,14 @@ class _ContactScreenState extends State<ContactScreen> {
   String _selectedCategory = 'General Inquiry';
   bool _isSubmitting = false;
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
   void _launchEmail() async {
     final Uri emailUri = Uri(
       scheme: 'mailto',
@@ -252,7 +260,7 @@ class _ContactScreenState extends State<ContactScreen> {
                           borderSide: const BorderSide(color: AppColors.solidBlack, width: 1.8),
                         ),
                       ),
-                      validator: (val) => val == null || val.isEmpty ? 'Please enter your name' : null,
+                      validator: (val) => val == null || val.trim().isEmpty ? 'Please enter your name' : null,
                     ),
 
                     const SizedBox(height: 14),
@@ -268,7 +276,7 @@ class _ContactScreenState extends State<ContactScreen> {
                           borderSide: const BorderSide(color: AppColors.solidBlack, width: 1.8),
                         ),
                       ),
-                      validator: (val) => val == null || !val.contains('@') ? 'Please enter a valid email' : null,
+                      validator: (val) => val == null || !val.trim().contains('@') ? 'Please enter a valid email' : null,
                     ),
 
                     const SizedBox(height: 14),

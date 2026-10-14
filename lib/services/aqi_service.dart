@@ -176,9 +176,16 @@ class AqiService {
         final data = jsonDecode(response.body);
         final current = data['current'];
         if (current != null) {
-          final aqi = (current['us_aqi'] as num?)?.toInt() ?? info.fallbackAqi;
-          final pm25 = (current['pm2_5'] as num?)?.toDouble() ?? info.fallbackPm25;
-          final pm10 = (current['pm10'] as num?)?.toDouble() ?? info.fallbackPm10;
+          final usAqi = (current['us_aqi'] as num?)?.toInt();
+          final rawPm25 = (current['pm2_5'] as num?)?.toDouble();
+          final rawPm10 = (current['pm10'] as num?)?.toDouble();
+          final pm25 = rawPm25 ?? info.fallbackPm25;
+          final pm10 = rawPm10 ?? info.fallbackPm10;
+          // Category bands in this app are Indian CPCB bands, so derive a CPCB
+          // AQI from PM values (US AQI uses different breakpoints).
+          final aqi = (rawPm25 != null || rawPm10 != null)
+              ? _cpcbAqi(pm25, pm10)
+              : (usAqi ?? info.fallbackAqi);
 
           String advisory = info.fallbackAdvisory;
           if (aqi <= 100) {
@@ -218,6 +225,39 @@ class AqiService {
       lastUpdated: DateTime.now(),
       isLive: false,
     );
+  }
+
+  /// CPCB AQI = max of PM2.5 and PM10 sub-indices (linear interpolation).
+  static int _cpcbAqi(double pm25, double pm10) {
+    const pm25Bp = [
+      [0.0, 30.0, 0.0, 50.0],
+      [30.0, 60.0, 51.0, 100.0],
+      [60.0, 90.0, 101.0, 200.0],
+      [90.0, 120.0, 201.0, 300.0],
+      [120.0, 250.0, 301.0, 400.0],
+      [250.0, 500.0, 401.0, 500.0],
+    ];
+    const pm10Bp = [
+      [0.0, 50.0, 0.0, 50.0],
+      [50.0, 100.0, 51.0, 100.0],
+      [100.0, 250.0, 101.0, 200.0],
+      [250.0, 350.0, 201.0, 300.0],
+      [350.0, 430.0, 301.0, 400.0],
+      [430.0, 510.0, 401.0, 500.0],
+    ];
+    double sub(double c, List<List<double>> bp) {
+      if (c <= 0) return 0;
+      for (final b in bp) {
+        if (c <= b[1]) {
+          return (b[3] - b[2]) / (b[1] - b[0]) * (c - b[0]) + b[2];
+        }
+      }
+      return 500;
+    }
+
+    final a = sub(pm25, pm25Bp);
+    final b = sub(pm10, pm10Bp);
+    return (a > b ? a : b).round();
   }
 
   String _getStatusText(int aqi) {

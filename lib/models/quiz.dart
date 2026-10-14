@@ -103,15 +103,15 @@ class QuizQuestion {
 
   factory QuizQuestion.fromJson(Map<String, dynamic> json) {
     return QuizQuestion(
-      id: json['id'] ?? '',
-      question: json['question'] ?? '',
+      id: json['id']?.toString() ?? '',
+      question: json['question']?.toString() ?? '',
       answers: (json['answers'] as List<dynamic>?)
-          ?.map((a) => QuizAnswer.fromJson(a))
+          ?.map((a) => QuizAnswer.fromJson(Map<String, dynamic>.from(a as Map)))
           .toList() ?? [],
-      correctAnswerId: json['correctAnswerId'] ?? '',
-      explanation: json['explanation'] ?? '',
-      points: json['points'] ?? 0,
-      imageUrl: json['imageUrl'],
+      correctAnswerId: json['correctAnswerId']?.toString() ?? '',
+      explanation: json['explanation']?.toString() ?? '',
+      points: (json['points'] as num?)?.toInt() ?? 0,
+      imageUrl: json['imageUrl']?.toString(),
     );
   }
 
@@ -141,9 +141,9 @@ class QuizAnswer {
 
   factory QuizAnswer.fromJson(Map<String, dynamic> json) {
     return QuizAnswer(
-      id: json['id'] ?? '',
-      text: json['text'] ?? '',
-      isCorrect: json['isCorrect'] ?? false,
+      id: json['id']?.toString() ?? '',
+      text: json['text']?.toString() ?? '',
+      isCorrect: json['isCorrect'] == true,
     );
   }
 

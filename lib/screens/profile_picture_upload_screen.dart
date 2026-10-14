@@ -4,6 +4,7 @@ import '../models/user.dart';
 import '../services/user_service.dart';
 import '../services/image_upload_service.dart';
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart' show SetOptions;
 
 class ProfilePictureUploadScreen extends StatefulWidget {
   final AppUser user;
@@ -177,7 +178,24 @@ class _ProfilePictureUploadScreenState extends State<ProfilePictureUploadScreen>
       if (imageUrl != null) {
         print('✅ Profile picture uploaded successfully: $imageUrl');
 
-        await UserService().updateUserProfilePic(widget.user.id, imageUrl);
+        final userService = UserService();
+        try {
+          await userService.updateUserProfilePic(widget.user.id, imageUrl);
+        } catch (_) {
+          // update() fails when the user has no Firestore doc yet (local/guest users)
+          try {
+            await userService.usersCollection
+                .doc(widget.user.id)
+                .set({'profilePic': imageUrl}, SetOptions(merge: true));
+          } catch (e) {
+            print('⚠️ Profile picture remote save skipped: $e');
+          }
+        }
+        final cached = await userService.getLocalUser(createIfNull: false);
+        await userService.saveCurrentLocalUser(
+          ((cached != null && cached.id == widget.user.id) ? cached : widget.user)
+              .copyWith(profilePic: imageUrl),
+        );
 
         if (mounted) {
           _showSuccessMessage('Profile picture updated successfully!');
@@ -185,7 +203,7 @@ class _ProfilePictureUploadScreenState extends State<ProfilePictureUploadScreen>
           if (widget.isFromRegistration) {
             Navigator.pushReplacementNamed(context, '/home');
           } else {
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           }
         }
       } else {
@@ -246,7 +264,7 @@ class _ProfilePictureUploadScreenState extends State<ProfilePictureUploadScreen>
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _skipForNow,
         ),
         title: Text(
           'Profile Picture',

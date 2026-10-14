@@ -221,7 +221,7 @@ class CaseService {
 
       final keyword = 'climate refugee';
       final url = 'https://newsapi.org/v2/everything?'
-          'q=$keyword&'
+          'q=${Uri.encodeQueryComponent(keyword)}&'
           'language=en&'
           'sortBy=publishedAt&'
           'pageSize=5&'
@@ -229,7 +229,7 @@ class CaseService {
 
       print('📡 CaseService: Fetching from NewsAPI with keyword: $keyword');
 
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return _processNewsAPIResponse(data);
@@ -253,7 +253,7 @@ class CaseService {
 
       final keywords = effectiveKeywords.join(' OR ');
       final url = 'https://gnews.io/api/v4/search?'
-          'q=$keywords&'
+          'q=${Uri.encodeQueryComponent(keywords)}&'
           'lang=en&'
           'country=in&'
           'max=10&'
@@ -261,7 +261,7 @@ class CaseService {
 
       print('📡 CaseService: Fetching from GNews with keywords: $keywords');
 
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return _processGNewsResponse(data);
@@ -322,7 +322,7 @@ class CaseService {
       final content = article['content'] ?? article['description'] ?? '';
       final url = article['url'] ?? '';
       final publishedAt = article['publishedAt'] ?? '';
-      final imageUrl = article['urlToImage'];
+      final imageUrl = article['urlToImage'] ?? article['image'];
 
       final personName = _extractPersonName(title, content);
 

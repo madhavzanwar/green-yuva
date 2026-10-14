@@ -32,14 +32,25 @@ class _ClimaSightsScreenState extends State<ClimaSightsScreen>
     _loadAqiData();
   }
 
+  int _aqiRequestId = 0;
+
   Future<void> _loadAqiData([String? city]) async {
+    if (!mounted) return;
+    final requestId = ++_aqiRequestId;
     setState(() => _isLoadingAqi = true);
-    final targetCity = city ?? await _aqiService.getSelectedCity();
-    final data = await _aqiService.fetchCityAqi(targetCity);
-    if (mounted) {
+    String targetCity = city ?? _selectedCity;
+    CityAqiData? data;
+    try {
+      targetCity = city ?? await _aqiService.getSelectedCity();
+      data = await _aqiService.fetchCityAqi(targetCity);
+    } catch (e) {
+      debugPrint('AQI load failed: $e');
+    }
+    // Ignore stale responses when the user switched city again meanwhile
+    if (mounted && requestId == _aqiRequestId) {
       setState(() {
         _selectedCity = targetCity;
-        _cityAqi = data;
+        _cityAqi = data ?? _cityAqi;
         _isLoadingAqi = false;
       });
     }

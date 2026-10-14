@@ -7,7 +7,7 @@ import '../models/user.dart';
 import '../models/ai_green_lens_result.dart';
 import '../models/verification_request.dart';
 import '../services/ai_service.dart';
-import '../services/climagame_service.dart';
+import '../services/user_service.dart';
 import '../services/image_upload_service.dart';
 import '../services/verification_service.dart';
 import '../theme/app_theme.dart';
@@ -445,6 +445,7 @@ class _MissionProofScreenState extends State<MissionProofScreen> {
                       setState(() {
                         _selectedImageBytes = null;
                         _lensResult = null;
+                        _isAuditingWithAi = false;
                       });
                     },
                     child: Container(
@@ -898,7 +899,8 @@ class _MissionProofScreenState extends State<MissionProofScreen> {
         points: widget.mission.points,
       );
 
-      if (mounted) {
+      // Ignore stale audit if the photo was retaken/replaced meanwhile
+      if (mounted && identical(_selectedImageBytes, bytes)) {
         setState(() {
           _lensResult = audit;
           _isAuditingWithAi = false;
@@ -906,7 +908,7 @@ class _MissionProofScreenState extends State<MissionProofScreen> {
         HapticFeedback.mediumImpact();
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && identical(_selectedImageBytes, bytes)) {
         setState(() {
           _isAuditingWithAi = false;
         });
@@ -915,7 +917,7 @@ class _MissionProofScreenState extends State<MissionProofScreen> {
   }
 
   Future<void> _startAiVerificationAndSubmit() async {
-    if (_selectedImageBytes == null) return;
+    if (_selectedImageBytes == null || _isVerifying) return;
 
     HapticFeedback.mediumImpact();
     setState(() {
@@ -924,88 +926,95 @@ class _MissionProofScreenState extends State<MissionProofScreen> {
       _verificationProgress = 0.25;
     });
 
-    // Run AI Green Lens audit if not already completed
-    AIGreenLensResult auditResult = _lensResult ??
-        await AIService.auditMissionProof(
-          imageBytes: _selectedImageBytes!,
-          missionTitle: widget.mission.title,
-          missionDescription: widget.mission.description,
-          campusName: widget.ecore.name,
-          points: widget.mission.points,
-        );
+    try {
+      // Run AI Green Lens audit if not already completed
+      AIGreenLensResult auditResult = _lensResult ??
+          await AIService.auditMissionProof(
+            imageBytes: _selectedImageBytes!,
+            missionTitle: widget.mission.title,
+            missionDescription: widget.mission.description,
+            campusName: widget.ecore.name,
+            points: widget.mission.points,
+          );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _lensResult = auditResult;
-      _verificationStep = 'Gemini Vision MRV: Ecological object & action classification...';
-      _verificationProgress = 0.60;
-    });
+      setState(() {
+        _lensResult = auditResult;
+        _verificationStep = 'Gemini Vision MRV: Ecological object & action classification...';
+        _verificationProgress = 0.60;
+      });
 
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (!mounted) return;
 
-    setState(() {
-      _verificationStep = 'Logging cryptographic proof to Green Yuva Registry...';
-      _verificationProgress = 0.85;
-    });
+      setState(() {
+        _verificationStep = 'Logging cryptographic proof to Green Yuva Registry...';
+        _verificationProgress = 0.85;
+      });
 
-    // Upload proof image
-    String? proofUrl = await ImageUploadService.uploadMissionProofImage(
-      missionId: widget.mission.id,
-      userId: widget.user.id,
-      imageBytes: _selectedImageBytes,
-    );
-
-    // Create verification request record in Firestore
-    final verificationService = VerificationService();
-    await verificationService.createVerificationRequest(
-      user: widget.user,
-      schoolId: widget.user.joinedSchoolId ?? 'campus-general',
-      schoolName: widget.ecore.name,
-      type: VerificationType.mission,
-      itemId: widget.mission.id,
-      itemTitle: widget.mission.title,
-      points: widget.mission.points,
-      proofImageUrl: proofUrl,
-      description: auditResult.classification,
-      aiConfidence: auditResult.confidence,
-      aiClassification: auditResult.classification,
-      aiIsAuthentic: auditResult.isAuthentic,
-      isProvisionalApproved: auditResult.isProvisionalApproved,
-      aiDetectedObjects: auditResult.detectedObjects.join(', '),
-      aiEngine: auditResult.engineUsed,
-    );
-
-    // If provisional approval granted, also mark mission completed in ClimaGame
-    if (auditResult.isProvisionalApproved) {
-      await ClimaGameService.completeMission(
-        userId: widget.user.id,
-        userName: widget.user.fullName,
-        ecoreId: widget.ecore.id,
+      // Upload proof image
+      String? proofUrl = await ImageUploadService.uploadMissionProofImage(
         missionId: widget.mission.id,
-        proofImageUrl: proofUrl,
+        userId: widget.user.id,
+        imageBytes: _selectedImageBytes,
       );
-    }
 
-    if (!mounted) return;
+      // Create verification request record in Firestore
+      final verificationService = VerificationService();
+      await verificationService.createVerificationRequest(
+        user: widget.user,
+        schoolId: widget.user.joinedSchoolId ?? 'campus-general',
+        schoolName: widget.ecore.name,
+        type: VerificationType.mission,
+        itemId: widget.mission.id,
+        itemTitle: widget.mission.title,
+        points: widget.mission.points,
+        proofImageUrl: proofUrl,
+        description: auditResult.classification,
+        aiConfidence: auditResult.confidence,
+        aiClassification: auditResult.classification,
+        aiIsAuthentic: auditResult.isAuthentic,
+        isProvisionalApproved: auditResult.isProvisionalApproved,
+        aiDetectedObjects: auditResult.detectedObjects.join(', '),
+        aiEngine: auditResult.engineUsed,
+      );
 
-    setState(() {
-      _verificationProgress = 1.0;
-      _verificationStep = auditResult.isProvisionalApproved
-          ? 'Verified! Provisional Karma Coins credited instantly!'
-          : 'Submitted! Forwarded to Campus Coordinator Queue.';
-    });
-
-    HapticFeedback.heavyImpact();
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    if (mounted) {
-      setState(() => _isVerifying = false);
+      // Points were already credited by createVerificationRequest when
+      // provisionally approved; only record the action here (avoid double credit).
       if (auditResult.isProvisionalApproved) {
-        _showCelebrationDialog(auditResult);
-      } else {
-        _showAdminReviewRoutedDialog(auditResult);
+        await UserService().addUserAction(widget.user.id);
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _verificationProgress = 1.0;
+        _verificationStep = auditResult.isProvisionalApproved
+            ? 'Verified! Provisional Karma Coins credited instantly!'
+            : 'Submitted! Forwarded to Campus Coordinator Queue.';
+      });
+
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 400));
+
+      if (mounted) {
+        setState(() => _isVerifying = false);
+        if (auditResult.isProvisionalApproved) {
+          _showCelebrationDialog(auditResult);
+        } else {
+          _showAdminReviewRoutedDialog(auditResult);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isVerifying = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Submission failed: $e'),
+            backgroundColor: AppColors.dustyCoral,
+          ),
+        );
       }
     }
   }

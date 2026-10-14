@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
   );
 
   static FirebaseOptions get android => FirebaseOptions(
-    apiKey: EnvConfig.firebaseAndroidApiKey.isNotEmpty
+    apiKey: EnvConfig.firebaseAndroidApiKey.isNotEmpty && !EnvConfig.firebaseAndroidApiKey.contains('your_')
         ? EnvConfig.firebaseAndroidApiKey
         : utf8.decode(base64.decode('QUl6YVN5RGFvZWdTSldoZDdscDlRVFFfVU9DS1NaM0l5bWlFR0dB')),
     appId: '1:347954266489:android:8972545d95b87dd779afa8',

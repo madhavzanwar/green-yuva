@@ -133,6 +133,7 @@ class VerificationService {
       });
     } catch (e) {
       print('❌ Failed to approve verification request: $e');
+      rethrow;
     }
   }
 
@@ -150,6 +151,7 @@ class VerificationService {
       });
     } catch (e) {
       print('❌ Failed to reject verification request: $e');
+      rethrow;
     }
   }
 

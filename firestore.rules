@@ -1,4 +1,4 @@
-﻿rules_version = '2';
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -10,81 +10,152 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Admin role. Granted either by the `admin` custom auth claim, or by the
+    // existence of a document at /admins/{uid}. Neither can be set from the
+    // client (the admins collection is write-locked below), so admins are
+    // provisioned from the Firebase console / Admin SDK only.
+    function isAdmin() {
+      return isAuthenticated()
+        && (request.auth.token.get('admin', false) == true
+            || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
     function isValidString(field, maxLen) {
       return field is string && field.size() <= maxLen;
     }
 
+    // True when the only element added to / removed from a list is the
+    // caller's own uid (like, save, join, leave and their inverses).
+    function onlySelfListChange(oldList, newList) {
+      return newList.toSet().difference(oldList.toSet()).hasOnly([request.auth.uid])
+        && oldList.toSet().difference(newList.toSet()).hasOnly([request.auth.uid]);
+    }
+
+    // ---- Admin roster: a user may only read their own entry. -----------------
+    match /admins/{adminId} {
+      allow get: if isOwner(adminId);
+      allow list: if false;
+      allow write: if false;
+    }
+
+    // ---- Users ---------------------------------------------------------------
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
+      allow update: if isOwner(userId)
+        || (isAdmin()
+            && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['points', 'actions', 'weekPoints', 'streak']));
       allow delete: if false;
+
+      // Per-user private data (quiz history, daily missions, ...).
+      match /{subcollection}/{docId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
+    // ---- Schools and their nested content ------------------------------------
     match /schools/{schoolId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isAdmin();
+
+      match /posts/{postId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated()
+          && request.resource.data.userId == request.auth.uid
+          && isValidString(request.resource.data.content, 2000);
+        allow update: if isAuthenticated()
+          && (request.auth.uid == resource.data.userId
+              || (request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['likes', 'saves', 'commentCount'])
+                  && onlySelfListChange(resource.data.get('likes', []),
+                                        request.resource.data.get('likes', []))
+                  && onlySelfListChange(resource.data.get('saves', []),
+                                        request.resource.data.get('saves', []))
+                  && request.resource.data.get('commentCount', 0)
+                       - resource.data.get('commentCount', 0) in [0, 1]));
+        allow delete: if isAuthenticated()
+          && (request.auth.uid == resource.data.userId || isAdmin());
+
+        match /comments/{commentId} {
+          allow read: if isAuthenticated();
+          allow create: if isAuthenticated()
+            && request.resource.data.userId == request.auth.uid
+            && isValidString(request.resource.data.text, 500);
+          allow update: if false;
+          allow delete: if isAuthenticated()
+            && (request.auth.uid == resource.data.userId || isAdmin());
+        }
+      }
+
+      match /activities/{activityId} {
+        allow read: if isAuthenticated();
+        // Members may only add/remove themselves from the participant list.
+        allow update: if isAuthenticated()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['participants', 'participantCount'])
+          && onlySelfListChange(resource.data.get('participants', []),
+                                request.resource.data.get('participants', []))
+          && request.resource.data.get('participantCount', 0)
+               - resource.data.get('participantCount', 0) in [-1, 0, 1];
+        allow create, delete: if isAdmin();
+      }
     }
 
-    match /posts/{postId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated()
-        && isValidString(request.resource.data.content, 2000);
-      allow update: if isAuthenticated()
-        && (request.auth.uid == resource.data.userId
-            || request.resource.data.diff(resource.data).affectedKeys()
-               .hasOnly(['likes', 'likedBy', 'comments']));
-      allow delete: if isAuthenticated()
-        && request.auth.uid == resource.data.userId;
-    }
-
-    match /comments/{commentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated()
-        && isValidString(request.resource.data.content, 500);
-      allow update, delete: if isAuthenticated()
-        && request.auth.uid == resource.data.userId;
-    }
-
-    match /activities/{activityId} {
-      allow read: if isAuthenticated();
-      allow write: if false;
-    }
-
+    // ---- Content catalogues (read by everyone, managed by admins) ------------
     match /cases/{caseId} {
       allow read: if isAuthenticated();
-      allow write: if false;
+      // Clients cache news-derived cases; only admins may edit or remove them.
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
     }
 
     match /quizzes/{quizId} {
       allow read: if isAuthenticated();
-      allow write: if false;
+      allow update: if isAdmin()
+        || (isAuthenticated()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['rating']));
+      allow create, delete: if isAdmin();
+
+      match /questions/{questionId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
     }
 
-    match /quiz_attempts/{attemptId} {
+    // Quiz progress documents carry the owning userId.
+    match /quiz_progress/{progressId} {
       allow read: if isAuthenticated()
-        && request.auth.uid == resource.data.userId;
+        && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated()
-        && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if false;
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if false;
     }
 
     match /ecores/{ecoreId} {
       allow read: if isAuthenticated();
-      allow update: if isAuthenticated()
-        && request.resource.data.diff(resource.data).affectedKeys()
-           .hasOnly(['conqueredBy', 'conqueredAt', 'state', 'cooldownUntil',
-                     'totalConquests', 'weeklyConquests']);
-      allow create, delete: if false;
+      allow write: if isAdmin();
     }
 
+    // ---- Verification workflow -----------------------------------------------
     match /verification_requests/{requestId} {
       allow read: if isAuthenticated()
-        && (request.auth.uid == resource.data.userId
-            || resource.data.schoolId != null);
+        && (request.auth.uid == resource.data.userId || isAdmin());
       allow create: if isAuthenticated()
-        && request.auth.uid == request.resource.data.userId;
-      allow update: if isAuthenticated();
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.status in ['pending', 'approved'];
+      // Only admins may review, only pending requests, never their own, and
+      // only the review fields may change.
+      allow update: if isAdmin()
+        && resource.data.status == 'pending'
+        && resource.data.userId != request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'reviewedAt', 'reviewedBy', 'reviewNotes'])
+        && request.resource.data.status in ['approved', 'rejected'];
       allow delete: if false;
     }
 
@@ -98,6 +169,14 @@ service cloud.firestore {
                .hasOnly(['status', 'swappedWith', 'swappedAt']));
       allow delete: if isAuthenticated()
         && request.auth.uid == resource.data.userId;
+    }
+
+    // Feedback form: write-only for signed-in users, readable by admins.
+    match /contact_messages/{messageId} {
+      allow create: if isAuthenticated()
+        && isValidString(request.resource.data.message, 5000);
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
 
     match /{document=**} {

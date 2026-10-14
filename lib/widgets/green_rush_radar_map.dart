@@ -215,6 +215,10 @@ class _GreenRushRadarMapState extends State<GreenRushRadarMap>
             initialZoom: _currentZoom,
             minZoom: 3.0,
             maxZoom: 18.5,
+            onPositionChanged: (camera, hasGesture) {
+              // Keep tracked zoom in sync with pinch/scroll zoom gestures
+              _currentZoom = camera.zoom;
+            },
             onTap: (tapPosition, point) {
               setState(() {
                 _activeSelectedEcore = null;
